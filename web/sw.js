@@ -2,7 +2,7 @@
 // Caches this origin's own files only — Supabase / Gemini / font CDNs always go to the network.
 const CACHE = "bala-vyakarana-v1";
 const ASSETS = [
-  "./", "./index.html", "./manifest.webmanifest", "./pwa.js",
+  "./", "./index.html", "./manifest.webmanifest", "./pwa.js", "./config.js",
   "./bala_vyakarana_viewer.html",
   "./bala_vyakarana_supabase_viewer.html",
   "./bala_vyakarana_rag_demo.html",

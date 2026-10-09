@@ -67,6 +67,7 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--a
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
 <script src="pwa.js" defer></script>
+<script src="config.js"></script>
 </head>
 <body>
 <div class="top">
@@ -181,11 +182,11 @@ async function run(){
 $('go').onclick = run;
 $('stop').onclick = ()=>{ STOP=true; };
 (function(){
-  const u=localStorage.getItem('bve_url'), k=localStorage.getItem('bve_key');
+  const u=localStorage.getItem('bala_url'), k=localStorage.getItem('bala_key');
   if(u) $('u').value=u; if(k) $('k').value=k;
 })();
 ['u','k','scope'].forEach(id=>$(id).addEventListener('change',()=>{
-  localStorage.setItem('bve_url',$('u').value.trim()); localStorage.setItem('bve_key',$('k').value.trim());
+  localStorage.setItem('bala_url',$('u').value.trim()); localStorage.setItem('bala_key',$('k').value.trim());
 }));
 </script>
 </body>

@@ -135,6 +135,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
 <script src="pwa.js" defer></script>
+<script src="config.js"></script>
 </head>
 <body>
 <header class="top">
@@ -206,8 +207,8 @@ async function connect(url,key,remember){
     if(pr.error) throw pr.error;
     if(ir.error) throw ir.error;
     build(pr.data, ir.data);
-    if(remember){ localStorage.setItem('bvgz_url',url); localStorage.setItem('bvgz_key',key); }
-    else { localStorage.removeItem('bvgz_url'); localStorage.removeItem('bvgz_key'); }
+    if(remember){ localStorage.setItem('bala_url',url); localStorage.setItem('bala_key',key); }
+    else { localStorage.removeItem('bala_url'); localStorage.removeItem('bala_key'); }
     startUI();
   }catch(e){
     const m=(e&&(e.message||e.error_description))||String(e);
@@ -307,7 +308,7 @@ function select(id){ cur=id; renderPariccheda(D.paricchedas.find(p=>p.id===id));
 function startUI(){
   $('searchwrap').style.display='flex'; $('settings').style.display='inline-block'; $('live').style.display='inline';
   cur=D.paricchedas[0].id; renderPariccheda(D.paricchedas[0]);
-  $('settings').onclick=()=>connectScreen(localStorage.getItem('bvgz_url')||PROJECT_URL, localStorage.getItem('bvgz_key')||'', '');
+  $('settings').onclick=()=>connectScreen(localStorage.getItem('bala_url')||PROJECT_URL, localStorage.getItem('bala_key')||'', '');
   let timer=null;
   $('q').addEventListener('input',()=>{ clearTimeout(timer); const v=$('q').value.trim();
     timer=setTimeout(()=>{ if(v.length<2){ $('qhint').textContent=''; select(cur); } else renderSearch(v); },160); });
@@ -315,7 +316,7 @@ function startUI(){
 
 /* ---------- boot ---------- */
 (function(){
-  const u=localStorage.getItem('bvgz_url'), k=localStorage.getItem('bvgz_key');
+  const u=localStorage.getItem('bala_url'), k=localStorage.getItem('bala_key');
   if(u&&k){ connect(u,k,true); }
   else { connectScreen(PROJECT_URL,'',''); }
 })();
