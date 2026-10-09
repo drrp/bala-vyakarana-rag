@@ -10,11 +10,13 @@
    visitor is ever prompted. READ THE WARNING FIRST.
    ===================================================================== */
 window.BALA_CONFIG = {
-  supabaseUrl: "https://YOUR-PROJECT.supabase.co",
+  // Row Level Security is now enabled on every bala_vyakarana_* table, with
+  // read-only policies for the anon role — so the key below is safe to publish.
+  supabaseUrl: "https://qndkvizszwdvhrccjxtr.supabase.co",
 
-  // WARNING: whatever you put here is served to every visitor. That is
-  // acceptable ONLY when Row Level Security is enabled on the tables
-  // (see DEPLOY.md) — otherwise anyone can read AND WRITE your database.
+  // Paste the project's legacy anon key (starts with eyJ…) on the line below
+  // and no visitor is ever asked for it. It is a publishable credential:
+  // shipping it in a web page is intended, and RLS limits it to reading.
   supabaseAnonKey: ""
 };
 
