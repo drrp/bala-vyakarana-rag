@@ -2,6 +2,8 @@
 
 A complete pipeline that scrapes the Telugu grammar text **బాల వ్యాకరణము** (Bala Vyakarana, by చిన్నయ సూరి / Chinnaya Suri), stores it as structured data in Supabase, and serves a retrieval-augmented chatbot over it — grounded in the sutras and in printed commentaries.
 
+**Live site: <https://drrp.github.io/bala-vyakarana-rag/>** — deployed from `web/` by GitHub Actions. See [DEPLOY.md](DEPLOY.md).
+
 ## What's in here
 
 ```
