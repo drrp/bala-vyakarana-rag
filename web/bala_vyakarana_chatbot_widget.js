@@ -90,14 +90,14 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function md(s) {
     var inline = function (t) {
-      return t
+      return esc(t)
         .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
         .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
         .replace(/`([^`\n]+)`/g, "<code>$1</code>");
     };
     var out = [], list = null;
     var flush = function () { if (list) { out.push("<ul>" + list.join("") + "</ul>"); list = null; } };
-    esc(s).split("\n").forEach(function (raw) {
+    (s == null ? "" : String(s)).split("\n").forEach(function (raw) {
       var line = raw.replace(/\s+$/, ""), m;
       if ((m = line.match(/^\s*[-•*]\s+(.*)$/))) { (list = list || []).push("<li>" + inline(m[1]) + "</li>"); return; }
       flush();

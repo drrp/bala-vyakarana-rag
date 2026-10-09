@@ -137,13 +137,13 @@ const $ = id => document.getElementById(id);
 const app = $('app');
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const md = s => {
-  const inline = t => t
+  const inline = t => esc(t)
     .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
     .replace(/`([^`\n]+)`/g,'<code>$1</code>');
   const out = []; let list = null;
   const flush = () => { if(list){ out.push('<ul>'+list.join('')+'</ul>'); list = null; } };
-  esc(s).split('\n').forEach(raw => {
+  (s==null?'':String(s)).split('\n').forEach(raw => {
     const line = raw.replace(/\s+$/,''); let m;
     if ((m = line.match(/^\s*[-•*]\s+(.*)$/))) { (list = list || []).push('<li>'+inline(m[1])+'</li>'); return; }
     flush();
