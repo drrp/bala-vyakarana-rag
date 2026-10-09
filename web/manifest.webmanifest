@@ -1,17 +1,37 @@
 {
-  "name": "\u0c2c\u0c3e\u0c32 \u0c35\u0c4d\u0c2f\u0c3e\u0c15\u0c30\u0c23\u0c2e\u0c41 \u2014 Bala Vyakarana",
+  "name": "బాల వ్యాకరణము — Bala Vyakarana",
   "short_name": "Bala Vyakarana",
-  "description": "Telugu grammar: the sutras of \u0c2c\u0c3e\u0c32 \u0c35\u0c4d\u0c2f\u0c3e\u0c15\u0c30\u0c23\u0c2e\u0c41 with a retrieval-augmented chatbot over the sutras and commentaries.",
+  "description": "Telugu grammar: the sutras of బాల వ్యాకరణము with a retrieval-augmented chatbot over the sutras and commentaries.",
   "lang": "te",
-  "start_url": "./index.html",
+  "id": "/bala-vyakarana-rag/",
+  "start_url": "./bala_vyakarana_chatbot.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "portrait-primary",
   "background_color": "#faf7f2",
   "theme_color": "#b4441f",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

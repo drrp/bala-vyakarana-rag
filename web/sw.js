@@ -1,12 +1,12 @@
-// Offline shell for the బాల వ్యాకరణము site.
+// Offline shell for the బాల వ్యాకరణము app.
 // Caches this origin's own files only — Supabase / Gemini / font CDNs always go to the network.
-const CACHE = "bala-vyakarana-v2";
+const CACHE = "bala-vyakarana-v3";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./pwa.js", "./config.js",
+  "./bala_vyakarana_chatbot.html",
   "./bala_vyakarana_viewer.html",
   "./bala_vyakarana_supabase_viewer.html",
   "./bala_vyakarana_rag_demo.html",
-  "./bala_vyakarana_chatbot.html",
   "./bala_vyakarana_rag.html",
   "./bala_vyakarana_embed.html",
   "./bala_vyakarana_chatbot_widget.js",
@@ -32,8 +32,12 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // never touch API/CDN traffic
 
-  // HTML pages: network first, so a redeploy is picked up on the next load
-  if (req.mode === "navigate" || (req.headers.get("accept") || "").indexOf("text/html") !== -1) {
+  const isHTML = req.mode === "navigate" || (req.headers.get("accept") || "").indexOf("text/html") !== -1;
+  // config.js carries the connection settings, so it must never be served stale.
+  const isConfig = url.pathname.endsWith("/config.js");
+
+  // network first, so a redeploy is picked up on the next load
+  if (isHTML || isConfig) {
     e.respondWith(
       fetch(req)
         .then((res) => {
