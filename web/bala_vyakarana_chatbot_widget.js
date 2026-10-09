@@ -113,6 +113,7 @@
     function item(type, level, text) {
       level = Math.min(level, 2);
       while (stack.length > level + 1) closeOne();
+      if (stack.length === level + 1 && stack[stack.length - 1].type !== type) closeOne();
       while (stack.length < level + 1) stack.push({ type: type, items: [] });
       stack[stack.length - 1].items.push("<li>" + inline(text) + "</li>");
     }
