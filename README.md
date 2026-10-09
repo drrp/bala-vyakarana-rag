@@ -88,7 +88,7 @@ Import the JSON, then build the corpus (see `scripts/` and the SQL in the schema
 - **Keys.** No API keys are committed. The browser pages take the Supabase **anon** key at runtime and keep it in `localStorage`; the Gemini key lives only in Edge Function secrets.
 - **The pages contain a project URL** (`https://<project-ref>.supabase.co`) as a convenience default — change it before publishing if you don't want your project ref public.
 - **Row Level Security** is not enabled by the schema. If your tables are public, enable RLS and add policies before exposing anything.
-- **Gemini free tier** limits embedding requests per minute and per day; `bala-embed` paces itself and is resumable. Enabling billing makes the initial index a one-minute job.
+- **Gemini free tier is tight, and metered per model.** On the free tier the Flash models allow only **20 requests/day**, while Flash-Lite allows **500/day** (the quota is per project, and resets at midnight Pacific). The chatbot therefore defaults to **`gemini-3.5-flash-lite`** and falls through to `gemini-3.1-flash-lite` when one model's daily quota is exhausted. Embeddings get 1,000 requests/day; `bala-embed` paces itself and is resumable. Enabling billing on the Gemini key removes all of these caps and makes the initial index a one-minute job.
 - Model names move fast: the functions read `GEMINI_EMBED_MODEL` / `GEMINI_CHAT_MODEL` / `GEMINI_THINKING_LEVEL` from the environment and auto-follow Google's "use models/…" hint when a model is retired.
 - The source text is in the public domain; check the site's terms before redistributing the scanned commentary text.
 

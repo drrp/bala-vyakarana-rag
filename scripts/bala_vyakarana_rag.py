@@ -26,7 +26,10 @@ SB_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SB_KEY = os.environ.get("SUPABASE_KEY", "")
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 EMBED_MODEL = os.environ.get("GEMINI_EMBED_MODEL", "gemini-embedding-001")
-CHAT_MODEL = os.environ.get("GEMINI_CHAT_MODEL", "gemini-3.8-flash")
+CHAT_MODELS = [
+    os.environ.get("GEMINI_CHAT_MODEL", "gemini-3.5-flash-lite"),
+    os.environ.get("GEMINI_CHAT_FALLBACK_MODEL", "gemini-3.1-flash-lite"),
+]
 THINKING_LEVEL = os.environ.get("GEMINI_THINKING_LEVEL", "low")
 DIMS = 768
 GEMINI = "https://generativelanguage.googleapis.com/v1beta"
@@ -108,19 +111,27 @@ def embed_query(text):
 
 
 def gemini_answer(system, contents):
-    global CHAT_MODEL
     # temperature / top_p / top_k are NOT supported on Gemini 3+ — omit them.
-    # thinkingLevel keeps latency down (default 'medium' takes tens of seconds).
+    # Free-tier daily quota is per MODEL (Flash 20/day, Flash-Lite 500/day),
+    # so an exhausted model falls through to the next one in the list.
     base = {"systemInstruction": {"parts": [{"text": system}]}, "contents": contents}
     with_thinking = dict(base, generationConfig={"thinkingConfig": {"thinkingLevel": THINKING_LEVEL}})
-    used, status, body = gemini_call(CHAT_MODEL, "generateContent", with_thinking)
-    if status == 400 and isinstance(body, str) and "thinking" in body.lower():
-        used, status, body = gemini_call(CHAT_MODEL, "generateContent", base)
-    if status != 200:
-        raise SystemExit("Gemini chat failed (%s, model %s): %s" % (status, used, body))
-    CHAT_MODEL = used
-    parts = body.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-    return "".join(p.get("text", "") for p in parts)
+    last = ""
+    for model in CHAT_MODELS:
+        used, status, body = gemini_call(model, "generateContent", with_thinking)
+        if status == 400 and isinstance(body, str) and "thinking" in body.lower():
+            used, status, body = gemini_call(model, "generateContent", base)
+        if status == 429:
+            last = body if isinstance(body, str) else ""
+            print("  %s rate-limited, trying next model" % model, flush=True)
+            continue
+        if status != 200:
+            raise SystemExit("Gemini chat failed (%s, model %s): %s" % (status, used, body))
+        parts = body.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+        out = "".join(p.get("text", "") for p in parts)
+        if out:
+            return out
+    raise SystemExit("Daily free-tier quota reached on every Gemini model (resets at midnight Pacific)." + (" " + last[:200] if last else ""))
 
 
 def vec_literal(v):
