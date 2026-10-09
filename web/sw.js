@@ -1,6 +1,6 @@
 // Offline shell for the బాల వ్యాకరణము site.
 // Caches this origin's own files only — Supabase / Gemini / font CDNs always go to the network.
-const CACHE = "bala-vyakarana-v1";
+const CACHE = "bala-vyakarana-v2";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./pwa.js", "./config.js",
   "./bala_vyakarana_viewer.html",
@@ -31,6 +31,22 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // never touch API/CDN traffic
+
+  // HTML pages: network first, so a redeploy is picked up on the next load
+  if (req.mode === "navigate" || (req.headers.get("accept") || "").indexOf("text/html") !== -1) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then((hit) => hit || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // everything else: cache first, fall back to the network
   e.respondWith(
     caches.match(req).then((hit) =>
       hit ||
@@ -38,7 +54,7 @@ self.addEventListener("fetch", (e) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(req, copy));
         return res;
-      }).catch(() => caches.match("./index.html"))
+      })
     )
   );
 });

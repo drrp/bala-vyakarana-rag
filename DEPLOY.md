@@ -55,6 +55,16 @@ cd web && python3 -m http.server 8080
 
 ---
 
+## If the site looks stale after a redeploy
+
+The pages register a service worker, which caches the app shell for offline use. HTML is fetched **network-first**, so a redeploy is normally picked up on the next load — but a browser that still has an *older* worker installed can keep serving old pages. To force it:
+
+1. Open the site → DevTools → **Application** → **Service Workers** → **Unregister**.
+2. Still in **Application**, click **Clear storage** → **Clear site data**.
+3. Reload.
+
+(Opening the site in a private/incognito window also bypasses any installed worker, which is a quick way to check whether you are looking at a cached copy.)
+
 ## Before you make it public
 
 **1. The anon key.** By default each page asks the visitor to paste your Supabase **anon** key, and keeps it in `localStorage`. That is fine for a private or personal deployment. For a genuinely public site you would instead hard-code the key in the page so visitors never see the prompt — but **only after enabling Row Level Security**, because with RLS disabled that key lets anyone read *and write* every table in the project:
