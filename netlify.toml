@@ -1,0 +1,27 @@
+# Netlify configuration — lets Netlify import this repo with no manual settings.
+#
+# Netlify reads this file automatically, so on the "Import from GitHub" screen
+# you can accept the defaults: no build command, publish directory = web.
+
+[build]
+  publish = "web"
+  command = ""
+
+# The service worker must never be cached for long, or browsers keep running an
+# old copy and serve stale pages after a redeploy.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Same idea for the HTML entry points — always revalidate.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Everything else can be cached hard: it only changes when we redeploy.
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
