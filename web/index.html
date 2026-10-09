@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>బాల వ్యాకరణము — Bala Vyakarana</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#b4441f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bala Vyakarana">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Serif+Telugu:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf7f2;--surface:#fff;--border:rgba(58,42,26,.14);--text:#2a251f;--dim:#6f6558;--faint:#9a8f80;
+--accent:#b4441f;--accent-dim:#f3e3da;--sage:#5f7a4f;
+--font-display:"Instrument Serif",Georgia,serif;--font-body:"IBM Plex Sans","Noto Sans Telugu",system-ui,sans-serif;
+--font-tel:"Noto Serif Telugu",serif;--shadow:0 1px 2px rgba(40,30,15,.05),0 8px 24px rgba(40,30,15,.05)}
+@media (prefers-color-scheme:dark){:root{--bg:#191612;--surface:#221e18;--border:rgba(255,238,214,.11);
+--text:#ece3d5;--dim:#a99c89;--faint:#7d7263;--accent:#e08159;--accent-dim:#3a2820;--sage:#9cb888;
+--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.55;
+background-image:radial-gradient(circle at 12% -8%,var(--accent-dim),transparent 45%);background-attachment:fixed;min-height:100dvh}
+header{display:flex;gap:14px;align-items:center;padding:22px 24px;border-bottom:1px solid var(--border)}
+.mark{width:52px;height:52px;border-radius:13px;display:grid;place-items:center;background:var(--accent);color:#fff;
+font-family:var(--font-tel);font-size:25px;font-weight:600;box-shadow:var(--shadow)}
+h1{margin:0;font-family:var(--font-tel);font-size:24px;font-weight:600}
+h1 span{font-family:var(--font-display);font-style:italic;font-weight:400;color:var(--dim);font-size:18px;margin-left:8px}
+header p{margin:2px 0 0;font-size:13px;color:var(--dim);font-family:var(--font-tel)}
+main{max-width:900px;margin:0 auto;padding:26px 24px 70px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:8px}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--border);
+border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);transition:transform .12s,border-color .12s}
+a.card:hover{transform:translateY(-2px);border-color:var(--accent)}
+a.card b{display:block;font-family:var(--font-tel);font-size:17px;font-weight:600;margin-bottom:4px}
+a.card small{color:var(--dim);font-size:12.5px;line-height:1.5;display:block}
+.tag{font-family:var(--font-mono,monospace);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);
+display:inline-block;margin-bottom:8px}
+footer{max-width:900px;margin:0 auto;padding:0 24px 40px;color:var(--faint);font-size:12px;font-family:monospace}
+</style>
+</head>
+<body>
+<header>
+  <div class="mark">బా</div>
+  <div>
+    <h1>బాల వ్యాకరణము<span>Bala Vyakarana</span></h1>
+    <p>చిన్నయ సూరి · sutras, commentary and a grounded chatbot</p>
+  </div>
+</header>
+<main>
+  <div class="grid">
+    <a class="card" href="bala_vyakarana_chatbot.html">
+      <span class="tag">chat</span>
+      <b>చాట్‌బాట్</b>
+      <small>Ask questions in Telugu or English. Answers cite the sutras and the ఘంటాపథము commentary pages. Needs the anon key.</small>
+    </a>
+    <a class="card" href="bala_vyakarana_rag.html">
+      <span class="tag">ask once</span>
+      <b>RAG (single question)</b>
+      <small>One question, one grounded answer with its sources.</small>
+    </a>
+    <a class="card" href="bala_vyakarana_viewer.html">
+      <span class="tag">offline</span>
+      <b>పాఠ్య పరిశీలన</b>
+      <small>Browse all 11 paricchedas and 465 sutras with their examples. Works with no network.</small>
+    </a>
+    <a class="card" href="bala_vyakarana_supabase_viewer.html">
+      <span class="tag">live</span>
+      <b>Live viewer</b>
+      <small>The same browser, reading straight from your Supabase tables.</small>
+    </a>
+    <a class="card" href="bala_vyakarana_rag_demo.html">
+      <span class="tag">offline</span>
+      <b>Retrieval demo</b>
+      <small>See which sutras a question pulls up — no keys, no network.</small>
+    </a>
+    <a class="card" href="bala_vyakarana_embed.html">
+      <span class="tag">setup</span>
+      <b>Index the corpus</b>
+      <small>One-time: build the embeddings for the sutras and PDF pages.</small>
+    </a>
+  </div>
+</main>
+<footer>Installable: on Android use “Install app”, on iPhone use Share → “Add to Home Screen”.</footer>
+<script src="pwa.js" defer></script>
+</body>
+</html>
