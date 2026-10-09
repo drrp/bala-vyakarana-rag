@@ -115,7 +115,7 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--a
 <script>
 const $ = id => document.getElementById(id);
 const FN = "/functions/v1/bala-embed";
-let TOTAL = null, RUNNING = false, STOP = false, done = 0, t0 = 0, pause = 12;
+let TOTAL = null, RUNNING = false, STOP = false, done = 0, t0 = 0, pause = 12, rl = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // fix a typo-safe default in case the URL was edited
@@ -159,11 +159,16 @@ async function run(){
       log((d.rate_limited?'paused':'batch')+': +'+d.embedded+'  remaining '+d.remaining);
       if(d.remaining===0) break;
       if(d.rate_limited){
+        rl++;
         pause = Math.min(Math.round(pause*1.6), 120);
         $('msg').className='msg warn';
         $('msg').textContent='Free-tier limit reached — waiting '+pause+'s, then continuing…';
+        if(rl >= 3){
+          throw new Error('The daily embedding quota looks used up — '+d.remaining+' chunks still to index. It resets at midnight Pacific (about 12:30 pm IST). Press the button again then, or enable billing on the Gemini key to finish it in a minute.');
+        }
         await sleep(pause*1000);
       } else {
+        rl = 0;
         if(d.embedded===0) throw new Error('No progress (remaining '+d.remaining+') — check the function logs.');
         pause = Math.max(Math.round(pause*0.85), 6);
         await sleep(pause*1000);
