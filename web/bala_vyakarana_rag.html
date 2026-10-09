@@ -69,7 +69,14 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .av.a{background:var(--accent);color:#fff}
 .bub{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 16px;box-shadow:var(--shadow);max-width:min(680px,86%)}
 .turn.user .bub{background:var(--accent-dim);border-color:transparent}
-.bub p{margin:0;font-family:var(--font-tel);font-size:16.5px;line-height:1.75;white-space:pre-wrap;overflow-wrap:break-word}
+.bub p{margin:0 0 10px;font-family:var(--font-tel);font-size:16.5px;line-height:1.75;white-space:pre-wrap;overflow-wrap:break-word}
+.bub p:last-child{margin-bottom:0}
+.bub ul{margin:6px 0 10px;padding-left:20px}
+.bub li{margin:3px 0;font-family:var(--font-tel);font-size:16.5px;line-height:1.7}
+.bub strong{color:var(--accent);font-weight:600}
+.bub h4{margin:12px 0 6px;font-family:var(--font-tel);font-size:17px;font-weight:600;color:var(--accent)}
+.bub blockquote{margin:10px 0;padding:9px 13px;border-left:3px solid var(--gold);background:var(--surface-2);border-radius:0 8px 8px 0;font-family:var(--font-tel);font-size:16px}
+.bub code{font-family:var(--font-mono);font-size:.92em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
 .bub.answer p{font-family:var(--font-tel)}
 .srcs{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px}
 .srcs .h{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:7px}
@@ -129,12 +136,25 @@ const FN = "/functions/v1/bala-rag";
 const $ = id => document.getElementById(id);
 const app = $('app');
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const md = s => esc(s)
-  .replace(/^#{1,6}\s+/gm,'')
-  .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
-  .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
-  .replace(/`([^`\n]+)`/g,'<code>$1</code>')
-  .replace(/^\s*[-*]\s+/gm,'• ');
+const md = s => {
+  const inline = t => t
+    .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
+    .replace(/`([^`\n]+)`/g,'<code>$1</code>');
+  const out = []; let list = null;
+  const flush = () => { if(list){ out.push('<ul>'+list.join('')+'</ul>'); list = null; } };
+  esc(s).split('\n').forEach(raw => {
+    const line = raw.replace(/\s+$/,''); let m;
+    if ((m = line.match(/^\s*[-•*]\s+(.*)$/))) { (list = list || []).push('<li>'+inline(m[1])+'</li>'); return; }
+    flush();
+    if ((m = line.match(/^#{1,6}\s+(.*)$/))) { out.push('<h4>'+inline(m[1])+'</h4>'); return; }
+    if ((m = line.match(/^\s*>\s?(.*)$/))) { out.push('<blockquote>'+inline(m[1])+'</blockquote>'); return; }
+    if (!line.trim()) return;
+    out.push('<p>'+inline(line)+'</p>');
+  });
+  flush();
+  return out.join('');
+};
 let CFG = null;
 
 function connectScreen(u,k,msg,type){
@@ -211,7 +231,7 @@ async function send(){
     const data=await res.json().catch(()=>({}));
     if(res.status===401) throw new Error('401 Unauthorized — the key was rejected. Edge Functions only accept the legacy anon JWT key (starts with "eyJ…"), not the newer "sb_publishable_…" key. Get it from Supabase → Project Settings → API Keys → Legacy API keys, and paste that.');
     if(!res.ok||data.error){ throw new Error(data.error? (data.error+(data.detail?(' — '+data.detail):'')) : ('HTTP '+res.status)); }
-    let html='<p>'+md(data.answer||'(no answer)')+'</p>';
+    let html=md(data.answer||'(no answer)');
     if(data.sources&&data.sources.length){
       html+='<div class="srcs"><div class="h">Sources · '+data.sources.length+' sutras</div>'+
         data.sources.map((s,i)=>'<div class="src"><div class="n">'+(i+1)+'</div><div class="t">'+esc(s.content)+

@@ -59,6 +59,10 @@
     '.m.a{align-self:flex-start;background:#fff;color:#2a251f;border:1px solid rgba(58,42,26,.12);border-bottom-left-radius:4px}' +
     '.m.a .src{margin-top:8px;border-top:1px dashed rgba(58,42,26,.18);padding-top:6px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:#9a8f80}' +
     '.m code{font-family:"IBM Plex Mono",monospace;font-size:.9em;background:rgba(120,90,60,.12);padding:0 3px;border-radius:3px}' +
+    '.m p{margin:0 0 8px}.m p:last-child{margin-bottom:0}' +
+    '.m ul{margin:4px 0 8px;padding-left:18px}.m li{margin:2px 0}' +
+    '.m strong{font-weight:600;color:' + cfg.accent + '}' +
+    '.m blockquote{margin:8px 0;padding:7px 11px;border-left:3px solid rgba(120,90,60,.35);background:rgba(120,90,60,.06);border-radius:0 6px 6px 0}' +
     '.typing{align-self:flex-start;color:#9a8f80;font-family:"IBM Plex Mono",monospace;font-size:11px}' +
     '.in{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(58,42,26,.12);background:#fff}' +
     '.in textarea{flex:1;resize:none;border:1px solid rgba(58,42,26,.2);border-radius:10px;padding:9px 11px;' +
@@ -85,12 +89,25 @@
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function md(s) {
-    return esc(s)
-      .replace(/^#{1,6}\s+/gm, "")
-      .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
-      .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
-      .replace(/`([^`\n]+)`/g, "<code>$1</code>")
-      .replace(/^\s*[-*]\s+/gm, "• ");
+    var inline = function (t) {
+      return t
+        .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+        .replace(/`([^`\n]+)`/g, "<code>$1</code>");
+    };
+    var out = [], list = null;
+    var flush = function () { if (list) { out.push("<ul>" + list.join("") + "</ul>"); list = null; } };
+    esc(s).split("\n").forEach(function (raw) {
+      var line = raw.replace(/\s+$/, ""), m;
+      if ((m = line.match(/^\s*[-•*]\s+(.*)$/))) { (list = list || []).push("<li>" + inline(m[1]) + "</li>"); return; }
+      flush();
+      if ((m = line.match(/^#{1,6}\s+(.*)$/))) { out.push("<h4>" + inline(m[1]) + "</h4>"); return; }
+      if ((m = line.match(/^\s*>\s?(.*)$/))) { out.push("<blockquote>" + inline(m[1]) + "</blockquote>"); return; }
+      if (!line.trim()) return;
+      out.push("<p>" + inline(line) + "</p>");
+    });
+    flush();
+    return out.join("");
   }
 
   function add(role, text, sources) {
