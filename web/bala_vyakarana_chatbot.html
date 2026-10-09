@@ -69,13 +69,17 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .av.a{background:var(--accent);color:#fff}
 .bub{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 16px;box-shadow:var(--shadow);max-width:min(680px,86%)}
 .turn.user .bub{background:var(--accent-dim);border-color:transparent}
-.bub p{margin:0 0 10px;font-family:var(--font-tel);font-size:16.5px;line-height:1.75;white-space:pre-wrap;overflow-wrap:break-word}
-.bub p:last-child{margin-bottom:0}
-.bub ul{margin:6px 0 10px;padding-left:20px}
-.bub li{margin:3px 0;font-family:var(--font-tel);font-size:16.5px;line-height:1.7}
+.bub p{margin:0 0 12px;font-family:var(--font-tel);font-size:16.5px;line-height:1.8;white-space:pre-wrap;overflow-wrap:break-word}
+.bub > :last-child{margin-bottom:0}
+.bub .hd{font-family:var(--font-tel);font-weight:600;color:var(--accent);margin:16px 0 7px;line-height:1.5}
+.bub .hd.h1{font-size:18.5px}
+.bub .hd.h2{font-size:17px}
+.bub .hd.h3{font-size:15.5px}
+.bub .sutra{margin:15px 0;padding:13px 18px;text-align:center;background:var(--surface-2);border-radius:10px;font-family:var(--font-tel);font-size:17px;line-height:1.9}
+.bub ul,.bub ol{margin:8px 0 12px;padding-left:24px}
+.bub li{margin:4px 0;font-family:var(--font-tel);font-size:16.5px;line-height:1.75}
+.bub li>ul,.bub li>ol{margin:4px 0;padding-left:20px}
 .bub strong{color:var(--accent);font-weight:600}
-.bub h4{margin:12px 0 6px;font-family:var(--font-tel);font-size:17px;font-weight:600;color:var(--accent)}
-.bub blockquote{margin:10px 0;padding:9px 13px;border-left:3px solid var(--gold);background:var(--surface-2);border-radius:0 8px 8px 0;font-family:var(--font-tel);font-size:16px}
 .bub code{font-family:var(--font-mono);font-size:.92em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
 .srcs{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px}
 .srcs summary{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);cursor:pointer}
@@ -139,18 +143,37 @@ const md = s => {
     .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
     .replace(/`([^`\n]+)`/g,'<code>$1</code>');
-  const out = []; let list = null;
-  const flush = () => { if(list){ out.push('<ul>'+list.join('')+'</ul>'); list = null; } };
+
+  const out = [], stack = [];
+  const closeOne = () => {
+    const top = stack.pop();
+    if (!top.items.length) return;
+    const depth = stack.length;
+    const html = '<'+top.type+' class="lv'+depth+'">'+top.items.join('')+'</'+top.type+'>';
+    if (stack.length && stack[stack.length-1].items.length) {
+      const p = stack[stack.length-1].items;
+      p[p.length-1] = p[p.length-1].replace(/<\/li>$/, html+'</li>');
+    } else out.push(html);
+  };
+  const closeAll = () => { while (stack.length) closeOne(); };
+  const item = (type, level, text) => {
+    level = Math.min(level, 2);
+    while (stack.length > level+1) closeOne();
+    while (stack.length < level+1) stack.push({type: type, items: []});
+    stack[stack.length-1].items.push('<li>'+inline(text)+'</li>');
+  };
+
   (s==null?'':String(s)).split('\n').forEach(raw => {
-    const line = raw.replace(/\s+$/,''); let m;
-    if ((m = line.match(/^\s*[-•*]\s+(.*)$/))) { (list = list || []).push('<li>'+inline(m[1])+'</li>'); return; }
-    flush();
-    if ((m = line.match(/^#{1,6}\s+(.*)$/))) { out.push('<h4>'+inline(m[1])+'</h4>'); return; }
-    if ((m = line.match(/^\s*>\s?(.*)$/))) { out.push('<blockquote>'+inline(m[1])+'</blockquote>'); return; }
+    const line = raw.replace(/\s+$/,'');
+    let m;
+    if ((m = line.match(/^(\s*)[-*•]\s+(.*)$/))) { item('ul', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
+    if ((m = line.match(/^(\s*)\d+[.)]\s+(.*)$/))) { item('ol', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
+    if ((m = line.match(/^(#{1,6})\s+(.*)$/))) { closeAll(); out.push('<div class="hd h'+Math.min(m[1].length,3)+'">'+inline(m[2])+'</div>'); return; }
+    if ((m = line.match(/^\s*>\s?(.*)$/))) { closeAll(); out.push('<div class="sutra">'+inline(m[1])+'</div>'); return; }
     if (!line.trim()) return;
-    out.push('<p>'+inline(line)+'</p>');
+    closeAll(); out.push('<p>'+inline(line)+'</p>');
   });
-  flush();
+  closeAll();
   return out.join('');
 };
 let CFG = null, HISTORY = [];
@@ -212,14 +235,6 @@ function bubble(role, html){
               '<div class="bub">'+html+'</div>';
   return t;
 }
-function sourcesHTML(srcs){
-  if(!srcs||!srcs.length) return '';
-  return '<details class="srcs"><summary>Sources · '+srcs.length+' sutras</summary>'+
-    srcs.map((s,i)=>'<div class="src"><div class="n">'+(i+1)+'</div><div class="t">'+esc(s.content)+
-      '<div class="m">'+esc(s.doc)+' · '+esc(s.ref)+' · sim '+(+s.similarity).toFixed(3)+'</div></div></div>').join('')+
-    '</details>';
-}
-
 async function send(){
   const q=$('q'); const text=q.value.trim(); if(!text) return;
   const thread=$('thread'); const w=$('welcome'); if(w) w.remove();
@@ -240,7 +255,7 @@ async function send(){
     const answer=data.answer||'(no answer)';
     HISTORY.push({role:'assistant', content:answer});
     load.remove();
-    thread.appendChild(bubble('assistant',md(answer)+sourcesHTML(data.sources)));
+    thread.appendChild(bubble('assistant',md(answer)));
   }catch(e){
     load.remove();
     if(/401|unauthor|failed to fetch|network|load failed/i.test(String(e.message||e))) $('settings').style.display='inline-block';

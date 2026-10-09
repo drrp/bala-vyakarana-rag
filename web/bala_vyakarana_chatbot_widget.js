@@ -59,10 +59,13 @@
     '.m.a{align-self:flex-start;background:#fff;color:#2a251f;border:1px solid rgba(58,42,26,.12);border-bottom-left-radius:4px}' +
     '.m.a .src{margin-top:8px;border-top:1px dashed rgba(58,42,26,.18);padding-top:6px;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:#9a8f80}' +
     '.m code{font-family:"IBM Plex Mono",monospace;font-size:.9em;background:rgba(120,90,60,.12);padding:0 3px;border-radius:3px}' +
-    '.m p{margin:0 0 8px}.m p:last-child{margin-bottom:0}' +
-    '.m ul{margin:4px 0 8px;padding-left:18px}.m li{margin:2px 0}' +
+    '.m p{margin:0 0 9px}.m p:last-child{margin-bottom:0}' +
+    '.m .hd{font-weight:600;color:' + cfg.accent + ';margin:12px 0 5px;line-height:1.5}' +
+    '.m .hd.h1{font-size:15.5px}.m .hd.h2{font-size:14.5px}.m .hd.h3{font-size:13.5px}' +
+    '.m .sutra{margin:11px 0;padding:9px 12px;text-align:center;background:rgba(120,90,60,.07);border-radius:8px;line-height:1.8}' +
+    '.m ul,.m ol{margin:5px 0 9px;padding-left:20px}.m li{margin:3px 0}' +
+    '.m li>ul,.m li>ol{margin:3px 0;padding-left:16px}' +
     '.m strong{font-weight:600;color:' + cfg.accent + '}' +
-    '.m blockquote{margin:8px 0;padding:7px 11px;border-left:3px solid rgba(120,90,60,.35);background:rgba(120,90,60,.06);border-radius:0 6px 6px 0}' +
     '.typing{align-self:flex-start;color:#9a8f80;font-family:"IBM Plex Mono",monospace;font-size:11px}' +
     '.in{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(58,42,26,.12);background:#fff}' +
     '.in textarea{flex:1;resize:none;border:1px solid rgba(58,42,26,.2);border-radius:10px;padding:9px 11px;' +
@@ -89,39 +92,47 @@
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function md(s) {
-    var inline = function (t) {
+    function inline(t) {
       return esc(t)
         .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
         .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
         .replace(/`([^`\n]+)`/g, "<code>$1</code>");
-    };
-    var out = [], list = null;
-    var flush = function () { if (list) { out.push("<ul>" + list.join("") + "</ul>"); list = null; } };
+    }
+    var out = [], stack = [];
+    function closeOne() {
+      var top = stack.pop();
+      if (!top.items.length) return;
+      var depth = stack.length;
+      var html = "<" + top.type + ' class="lv' + depth + '">' + top.items.join("") + "</" + top.type + ">";
+      if (stack.length && stack[stack.length - 1].items.length) {
+        var p = stack[stack.length - 1].items;
+        p[p.length - 1] = p[p.length - 1].replace(/<\/li>$/, html + "</li>");
+      } else out.push(html);
+    }
+    function closeAll() { while (stack.length) closeOne(); }
+    function item(type, level, text) {
+      level = Math.min(level, 2);
+      while (stack.length > level + 1) closeOne();
+      while (stack.length < level + 1) stack.push({ type: type, items: [] });
+      stack[stack.length - 1].items.push("<li>" + inline(text) + "</li>");
+    }
     (s == null ? "" : String(s)).split("\n").forEach(function (raw) {
       var line = raw.replace(/\s+$/, ""), m;
-      if ((m = line.match(/^\s*[-•*]\s+(.*)$/))) { (list = list || []).push("<li>" + inline(m[1]) + "</li>"); return; }
-      flush();
-      if ((m = line.match(/^#{1,6}\s+(.*)$/))) { out.push("<h4>" + inline(m[1]) + "</h4>"); return; }
-      if ((m = line.match(/^\s*>\s?(.*)$/))) { out.push("<blockquote>" + inline(m[1]) + "</blockquote>"); return; }
+      if ((m = line.match(/^(\s*)[-*•]\s+(.*)$/))) { item("ul", Math.floor(m[1].replace(/\t/g, "  ").length / 2), m[2]); return; }
+      if ((m = line.match(/^(\s*)\d+[.)]\s+(.*)$/))) { item("ol", Math.floor(m[1].replace(/\t/g, "  ").length / 2), m[2]); return; }
+      if ((m = line.match(/^(#{1,6})\s+(.*)$/))) { closeAll(); out.push('<div class="hd h' + Math.min(m[1].length, 3) + '">' + inline(m[2]) + "</div>"); return; }
+      if ((m = line.match(/^\s*>\s?(.*)$/))) { closeAll(); out.push('<div class="sutra">' + inline(m[1]) + "</div>"); return; }
       if (!line.trim()) return;
-      out.push("<p>" + inline(line) + "</p>");
+      closeAll(); out.push("<p>" + inline(line) + "</p>");
     });
-    flush();
+    closeAll();
     return out.join("");
   }
 
-  function add(role, text, sources) {
+  function add(role, text) {
     var d = document.createElement("div");
     d.className = "m " + role;
     d.innerHTML = md(text);
-    if (sources && sources.length) {
-      var s = document.createElement("div");
-      s.className = "src";
-      s.textContent = "Sources: " + sources.map(function (x, i) {
-        return "[" + (i + 1) + "] " + x.chapter + " · sutra " + x.sutra;
-      }).join("   ");
-      d.appendChild(s);
-    }
     msgs.appendChild(d);
     msgs.scrollTop = msgs.scrollHeight;
     return d;
