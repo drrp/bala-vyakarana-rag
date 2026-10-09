@@ -94,4 +94,4 @@ Import the JSON, then build the corpus (see `scripts/` and the SQL in the schema
 
 ## License
 
-No license file is included yet — add one (e.g. MIT for the code) before making the repository public.
+The code is released under the **MIT License** — see [LICENSE](LICENSE).
