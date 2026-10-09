@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>బాల వ్యాకరణము — RAG Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+Telugu:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#faf7f2; --surface:#ffffff; --surface-2:#f4efe7;
+  --border:rgba(58,42,26,.14); --border-strong:rgba(58,42,26,.26);
+  --text:#2a251f; --text-dim:#6f6558; --text-faint:#9a8f80;
+  --accent:#b4441f; --accent-dim:#f3e3da; --sage:#5f7a4f; --gold:#a9772a;
+  --font-display:"Instrument Serif",Georgia,serif;
+  --font-body:"IBM Plex Sans","Noto Sans Telugu",system-ui,sans-serif;
+  --font-tel:"Noto Serif Telugu","Noto Sans Telugu",serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --shadow:0 1px 2px rgba(40,30,15,.05),0 8px 24px rgba(40,30,15,.05);
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#191612; --surface:#221e18; --surface-2:#2a251d;
+  --border:rgba(255,238,214,.11); --border-strong:rgba(255,238,214,.22);
+  --text:#ece3d5; --text-dim:#a99c89; --text-faint:#7d7263;
+  --accent:#e08159; --accent-dim:#3a2820; --sage:#9cb888; --gold:#d6ab5e;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;background-image:radial-gradient(circle at 12% -8%,var(--accent-dim),transparent 45%);
+  background-attachment:fixed;height:100dvh;display:flex;flex-direction:column}
+.top{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:13px 22px;border-bottom:1px solid var(--border);background:var(--bg)}
+.brand{display:flex;gap:13px;align-items:center}
+.mark{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;background:var(--accent);color:#fff;
+  font-family:var(--font-tel);font-size:21px;font-weight:600;box-shadow:var(--shadow)}
+.brand h1{margin:0;font-family:var(--font-tel);font-size:19px;font-weight:600}
+.brand .tl{font-family:var(--font-display);font-style:italic;color:var(--text-dim);font-size:15px;margin-left:6px}
+.brand p{margin:1px 0 0;font-size:12px;color:var(--text-dim);font-family:var(--font-tel)}
+.badge{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--sage);
+  border:1px solid var(--border);border-radius:20px;padding:3px 9px;margin-left:8px;vertical-align:middle}
+.right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.btn{font-family:var(--font-body);font-size:13px;font-weight:500;padding:8px 14px;border-radius:9px;
+  border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* connect */
+.wrap{max-width:620px;margin:7vh auto;padding:0 22px;width:100%}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;box-shadow:var(--shadow)}
+.card h2{margin:0 0 4px;font-family:var(--font-tel);font-size:23px}
+.card .sub{color:var(--text-dim);font-size:13.5px;margin:0 0 18px}
+label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin:14px 0 6px}
+.card input{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:13px;outline:none}
+.card input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.row{display:flex;gap:10px;align-items:center;margin-top:20px;flex-wrap:wrap}
+.msg{font-size:13px;font-family:var(--font-mono);margin-top:12px;min-height:18px}
+.msg.err{color:#c0392b}.msg.ok{color:var(--sage)}
+.note-sm{font-size:12.5px;color:var(--text-dim);margin-top:18px;padding-top:14px;border-top:1px solid var(--border);line-height:1.6}
+.note-sm code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+/* chat */
+.chat{flex:1;overflow-y:auto;padding:26px 22px 8px}
+.thread{max-width:840px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.turn{display:flex;gap:12px;align-items:flex-start}
+.turn.user{flex-direction:row-reverse}
+.av{width:32px;height:32px;flex:none;border-radius:9px;display:grid;place-items:center;font-size:15px;font-family:var(--font-tel)}
+.av.u{background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim)}
+.av.a{background:var(--accent);color:#fff}
+.bub{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 16px;box-shadow:var(--shadow);max-width:min(680px,86%)}
+.turn.user .bub{background:var(--accent-dim);border-color:transparent}
+.bub p{margin:0;font-family:var(--font-tel);font-size:16.5px;line-height:1.75;white-space:pre-wrap;overflow-wrap:break-word}
+.bub.answer p{font-family:var(--font-tel)}
+.srcs{margin-top:12px;border-top:1px dashed var(--border);padding-top:10px}
+.srcs .h{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:7px}
+.src{display:grid;grid-template-columns:26px 1fr;gap:9px;padding:6px 0;border-bottom:1px solid var(--border)}
+.src:last-child{border-bottom:none}
+.src .n{font-family:var(--font-mono);font-size:11px;color:#fff;background:var(--gold);width:22px;height:22px;border-radius:6px;display:grid;place-items:center}
+.src .t{font-family:var(--font-tel);font-size:14.5px;line-height:1.6}
+.src .m{font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint);margin-top:2px}
+.loading{display:flex;gap:5px;align-items:center;color:var(--text-dim);font-family:var(--font-mono);font-size:12px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:b 1s infinite ease-in-out}
+.dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.empty{margin:auto;text-align:center;color:var(--text-dim);max-width:520px;padding:40px 0}
+.empty h2{font-family:var(--font-tel);color:var(--text);font-size:22px;margin:0 0 6px}
+.empty .eg{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.eg button{font-family:var(--font-tel);font-size:14px;padding:8px 13px;border-radius:20px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer}
+.eg button:hover{background:var(--surface-2);border-color:var(--accent)}
+.composer{border-top:1px solid var(--border);background:var(--bg);padding:14px 22px}
+.composer .in{max-width:840px;margin:0 auto;display:flex;gap:10px;align-items:flex-end}
+.composer textarea{flex:1;resize:none;min-height:46px;max-height:160px;padding:12px 14px;border-radius:11px;
+  border:1px solid var(--border-strong);background:var(--surface);color:var(--text);font-family:var(--font-tel);font-size:16px;outline:none;line-height:1.5}
+.composer textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+footer{padding:8px 22px 14px;color:var(--text-faint);font-size:11.5px;font-family:var(--font-mono);text-align:center}
+@media (max-width:700px){.brand .tl{display:none}.bub{max-width:92%}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="mark">బా</div>
+    <div>
+      <h1>బాల వ్యాకరణము<span class="tl">RAG</span><span class="badge" id="badge" style="display:none">● live</span></h1>
+      <p>చిన్నయ సూరి · ask the sutras</p>
+    </div>
+  </div>
+  <div class="right">
+    <button class="btn" id="settings" style="display:none">Connection</button>
+    <button class="btn" id="clear" style="display:none">Clear</button>
+  </div>
+</header>
+
+<div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+<footer>Retrieval over <code style="font-family:var(--font-mono)">bala_vyakarana_chunks</code> · answers by the <code style="font-family:var(--font-mono)">bala-rag</code> Edge Function</footer>
+
+<script>
+const PROJECT_URL = "https://qndkvizszwdvhrccjxtr.supabase.co";
+const FN = "/functions/v1/bala-rag";
+const $ = id => document.getElementById(id);
+const app = $('app');
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const md = s => esc(s)
+  .replace(/^#{1,6}\s+/gm,'')
+  .replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>')
+  .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
+  .replace(/`([^`\n]+)`/g,'<code>$1</code>')
+  .replace(/^\s*[-*]\s+/gm,'• ');
+let CFG = null;
+
+function connectScreen(u,k,msg,type){
+  $('settings').style.display='none'; $('clear').style.display='none'; $('badge').style.display='none';
+  app.innerHTML =
+    '<div class="wrap"><div class="card">'+
+    '<h2>Connect to the RAG</h2>'+
+    '<p class="sub">This chat sends your question to the <code>bala-rag</code> Edge Function, which embeds it, finds the closest sutras in <em>bala_vyakarana_chunks</em>, and asks GPT to answer from them.</p>'+
+    '<label>Project URL</label><input id="u" value="'+esc(u||PROJECT_URL)+'" spellcheck="false">'+
+    '<label>Anon / publishable key</label><input id="k" type="password" value="'+esc(k||'')+'" placeholder="paste your legacy anon key (starts with eyJ…)" spellcheck="false">'+
+    '<div class="row"><button class="btn primary" id="go">Connect</button>'+
+    '<label style="margin:0;display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-family:var(--font-body);font-size:13px;color:var(--text-dim)"><input type="checkbox" id="remember" checked style="width:auto"> Remember in this browser</label></div>'+
+    '<div class="msg '+(type||'')+'" id="cmsg">'+esc(msg||'')+'</div>'+
+    '<div class="note-sm">Use the <b>legacy anon key</b> (starts with <code>eyJ…</code>) — the newer <code>sb_publishable_…</code> key is rejected with <b>401</b> by JWT-verified functions. '+
+    'Also set the Gemini key for the function once: <code>supabase secrets set GEMINI_API_KEY=…</code> (free from aistudio.google.com), and run the embed script so the chunks have vectors.</div>'+
+    '</div></div>';
+  $('go').onclick=()=>{
+    const uu=$('u').value.trim(), kk=$('k').value.trim();
+    if(!uu||!kk){ $('cmsg').className='msg err'; $('cmsg').textContent='Enter both the project URL and the key.'; return; }
+    CFG={url:uu.replace(/\/$/,''),key:kk};
+    if($('remember').checked){ localStorage.setItem('bvr_url',CFG.url); localStorage.setItem('bvr_key',CFG.key); }
+    else { localStorage.removeItem('bvr_url'); localStorage.removeItem('bvr_key'); }
+    startChat();
+  };
+}
+
+function startChat(){
+  $('settings').style.display='inline-block'; $('clear').style.display='inline-block'; $('badge').style.display='inline';
+  app.innerHTML =
+    '<div class="chat"><div class="thread" id="thread">'+
+      '<div class="empty" id="welcome"><h2>Ask about బాల వ్యాకరణము</h2>'+
+      '<p>The answer is grounded only in the sutras retrieved from your table.</p>'+
+      '<div class="eg">'+
+        '<button>సంధి అంటే ఏమిటి?</button>'+
+        '<button>కారకములు ఎన్ని రకములు?</button>'+
+        '<button>సమాసములు ఎన్ని విధములు?</button>'+
+        '<button>What is a tatsama word?</button>'+
+      '</div></div>'+
+    '</div></div>'+
+    '<div class="composer"><div class="in">'+
+      '<textarea id="q" rows="1" placeholder="Type a question… (Telugu or English)"></textarea>'+
+      '<button class="btn primary" id="send">Ask</button>'+
+    '</div></div>';
+  $('settings').onclick=()=>connectScreen(CFG.url,CFG.key,'');
+  $('clear').onclick=()=>startChat();
+  const q=$('q');
+  q.addEventListener('input',()=>{ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,160)+'px'; });
+  q.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
+  $('send').onclick=send;
+  document.querySelectorAll('.eg button').forEach(b=>b.onclick=()=>{ q.value=b.textContent; send(); });
+  q.focus();
+}
+
+function turn(role, html, extra){
+  const t=document.createElement('div'); t.className='turn '+role;
+  t.innerHTML='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'నే':'బా')+'</div>'+
+              '<div class="bub '+(role==='assistant'?'answer':'')+'">'+html+'</div>';
+  return t;
+}
+
+async function send(){
+  const q=$('q'); const text=q.value.trim(); if(!text) return;
+  const thread=$('thread'); const w=$('welcome'); if(w) w.remove();
+  q.value=''; q.style.height='auto';
+  thread.appendChild(turn('user','<p>'+esc(text)+'</p>'));
+  const load=document.createElement('div'); load.className='turn assistant';
+  load.innerHTML='<div class="av a">బా</div><div class="bub answer"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> searching the sutras…</div></div>';
+  thread.appendChild(load); load.scrollIntoView({behavior:'smooth',block:'end'});
+  $('send').disabled=true;
+  try{
+    const res=await fetch(CFG.url+FN,{method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+CFG.key,'apikey':CFG.key},
+      body:JSON.stringify({question:text,match_count:6})});
+    const data=await res.json().catch(()=>({}));
+    if(res.status===401) throw new Error('401 Unauthorized — the key was rejected. Edge Functions only accept the legacy anon JWT key (starts with "eyJ…"), not the newer "sb_publishable_…" key. Get it from Supabase → Project Settings → API Keys → Legacy API keys, and paste that.');
+    if(!res.ok||data.error){ throw new Error(data.error? (data.error+(data.detail?(' — '+data.detail):'')) : ('HTTP '+res.status)); }
+    let html='<p>'+md(data.answer||'(no answer)')+'</p>';
+    if(data.sources&&data.sources.length){
+      html+='<div class="srcs"><div class="h">Sources · '+data.sources.length+' sutras</div>'+
+        data.sources.map((s,i)=>'<div class="src"><div class="n">'+(i+1)+'</div><div class="t">'+esc(s.content)+
+          '<div class="m">'+esc(s.chapter)+' · sutra '+esc(s.sutra)+' · sim '+(+s.similarity).toFixed(3)+'</div></div></div>').join('')+
+        '</div>';
+    }
+    load.remove();
+    thread.appendChild(turn('assistant',html));
+  }catch(e){
+    load.remove();
+    thread.appendChild(turn('assistant','<p style="color:#c0392b">'+esc(String(e.message||e))+'</p>'));
+  }finally{
+    $('send').disabled=false; q.focus();
+    thread.lastChild.scrollIntoView({behavior:'smooth',block:'end'});
+  }
+}
+
+(function(){
+  const u=localStorage.getItem('bvr_url'), k=localStorage.getItem('bvr_key');
+  if(u&&k){ CFG={url:u,key:k}; startChat(); } else { connectScreen(PROJECT_URL,'',''); }
+})();
+</script>
+</body>
+</html>

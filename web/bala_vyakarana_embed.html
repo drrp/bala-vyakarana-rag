@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>బాల వ్యాకరణము — Build embeddings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+Telugu:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#faf7f2; --surface:#fff; --surface-2:#f4efe7;
+  --border:rgba(58,42,26,.14); --border-strong:rgba(58,42,26,.26);
+  --text:#2a251f; --text-dim:#6f6558; --text-faint:#9a8f80;
+  --accent:#b4441f; --accent-dim:#f3e3da; --sage:#5f7a4f; --gold:#a9772a;
+  --font-display:"Instrument Serif",Georgia,serif;
+  --font-body:"IBM Plex Sans","Noto Sans Telugu",system-ui,sans-serif;
+  --font-tel:"Noto Serif Telugu",serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --shadow:0 1px 2px rgba(40,30,15,.05),0 8px 24px rgba(40,30,15,.05);
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#191612; --surface:#221e18; --surface-2:#2a251d;
+  --border:rgba(255,238,214,.11); --border-strong:rgba(255,238,214,.22);
+  --text:#ece3d5; --text-dim:#a99c89; --text-faint:#7d7263;
+  --accent:#e08159; --accent-dim:#3a2820; --sage:#9cb888; --gold:#d6ab5e;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.55;
+  background-image:radial-gradient(circle at 12% -8%,var(--accent-dim),transparent 45%);background-attachment:fixed;min-height:100dvh}
+.top{display:flex;gap:14px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--border)}
+.mark{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;background:var(--accent);color:#fff;
+  font-family:var(--font-tel);font-size:21px;font-weight:600;box-shadow:var(--shadow)}
+.top h1{margin:0;font-family:var(--font-tel);font-size:19px;font-weight:600}
+.top .tl{font-family:var(--font-display);font-style:italic;color:var(--text-dim);font-size:15px;margin-left:6px}
+.top p{margin:1px 0 0;font-size:12px;color:var(--text-dim);font-family:var(--font-tel)}
+.wrap{max-width:660px;margin:6vh auto;padding:0 22px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;box-shadow:var(--shadow)}
+h2{margin:0 0 4px;font-family:var(--font-tel);font-size:23px}
+.sub{color:var(--text-dim);font-size:13.5px;margin:0 0 18px}
+label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin:14px 0 6px}
+input,select{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);font-family:var(--font-mono);font-size:13px;outline:none}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.row{display:flex;gap:10px;align-items:center;margin-top:20px;flex-wrap:wrap}
+.btn{font-family:var(--font-body);font-size:14px;font-weight:500;padding:10px 16px;border-radius:9px;
+  border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.bar{height:10px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);overflow:hidden;margin-top:18px}
+.bar i{display:block;height:100%;background:var(--sage);width:0%;transition:width .3s}
+.stats{display:flex;gap:18px;margin-top:10px;font-family:var(--font-mono);font-size:12px;color:var(--text-dim);flex-wrap:wrap}
+.stats b{color:var(--accent);font-size:14px}
+.log{margin-top:16px;max-height:170px;overflow-y:auto;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  padding:10px 12px;font-family:var(--font-mono);font-size:11.5px;color:var(--text-dim);white-space:pre-wrap;display:none}
+.msg{margin-top:14px;font-family:var(--font-mono);font-size:12.5px;min-height:18px}
+.msg.err{color:#c0392b}.msg.ok{color:var(--sage)}.msg.warn{color:var(--gold)}
+.note-sm{font-size:12.5px;color:var(--text-dim);margin-top:18px;padding-top:14px;border-top:1px solid var(--border);line-height:1.6}
+.note-sm code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="mark">బా</div>
+  <div>
+    <h1>బాల వ్యాకరణము<span class="tl">Build embeddings</span></h1>
+    <p>paces itself to stay inside the Gemini free tier</p>
+  </div>
+</div>
+<div class="wrap">
+  <div class="card">
+    <h2>Index the corpus</h2>
+    <p class="sub">Computes a vector for each chunk of <code>bala_vyakarana_chunks</code> so the chatbot can retrieve it. It runs slowly on purpose — free-tier Gemini limits requests per minute, so it pauses and resumes automatically instead of failing.</p>
+
+    <label>Project URL</label>
+    <input id="u" value="https://qndkvizszwdvhrccjxtr.supabase.co" spellcheck="false">
+    <label>Legacy anon key (starts with eyJ…)</label>
+    <input id="k" type="password" placeholder="paste your legacy anon key" spellcheck="false">
+    <label>What to index</label>
+    <select id="scope">
+      <option value="">Everything (sutras + PDFs)</option>
+      <option value="bala_vyakarana">Sutras only (465 — fastest, enough to start)</option>
+      <option value="pdf">PDF commentary only (2,311)</option>
+    </select>
+
+    <div class="row">
+      <button class="btn primary" id="go">Build embeddings</button>
+      <button class="btn" id="stop" disabled>Stop</button>
+    </div>
+
+    <div class="bar"><i id="fill"></i></div>
+    <div class="stats">
+      <span>indexed <b id="done">–</b></span>
+      <span>remaining <b id="left">–</b></span>
+      <span id="pct">–</span>
+      <span id="elapsed"></span>
+    </div>
+    <div class="log" id="log"></div>
+    <div class="msg" id="msg"></div>
+
+    <div class="note-sm"><b>Tip:</b> pick <i>Sutras only</i> first — 465 chunks is quick and already makes grammar answers grounded. Then run again for the PDF commentary. Progress is saved in the database, so you can stop and resume any time. If the free tier runs out for the day, come back later and press the button again; it picks up where it left off.</div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const FN = "/functions/v1/bala-embed";
+let TOTAL = null, RUNNING = false, STOP = false, done = 0, t0 = 0, pause = 12;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// fix a typo-safe default in case the URL was edited
+$('u').value = 'https://qndkvizszwdvhrccjxtr.supabase.co';
+
+function log(l){ const el=$('log'); el.style.display='block'; el.textContent += l+"\n"; el.scrollTop = el.scrollHeight; }
+function paint(done, remaining){
+  $('done').textContent = done;
+  $('left').textContent = remaining;
+  if (TOTAL){ const p=Math.min(100,Math.round(done/TOTAL*100)); $('fill').style.width=p+'%'; $('pct').textContent=p+'%'; }
+  if (t0){ const s=Math.round((Date.now()-t0)/1000); $('elapsed').textContent = s+'s elapsed'; }
+}
+function cfg(){
+  const u=$('u').value.trim().replace(/\/$/,''), k=$('k').value.trim();
+  if(!u||!k){ $('msg').className='msg err'; $('msg').textContent='Enter both the project URL and the legacy anon key.'; return null; }
+  return {url:u,key:k,source:$('scope').value||null};
+}
+async function call(c, body){
+  const res = await fetch(c.url+FN,{method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.key,'apikey':c.key},
+    body:JSON.stringify(body)});
+  const d = await res.json().catch(()=>({}));
+  if(res.status===401) throw new Error('401 — key rejected. Use the legacy anon key (eyJ…), not sb_publishable_….');
+  if(!res.ok||d.error) throw new Error(d.error||('HTTP '+res.status));
+  return d;
+}
+
+async function run(){
+  if(RUNNING) return;
+  const c = cfg(); if(!c) return;
+  RUNNING=true; STOP=false; $('go').disabled=true; $('stop').disabled=false;
+  $('msg').className='msg'; $('msg').textContent='Working…';
+  t0=Date.now(); done=0; pause=12; TOTAL=null;
+  log('start ('+(c.source||'everything')+')');
+  try{
+    while(!STOP){
+      const d = await call(c,{batch_size:20,max_batches:2,source:c.source});
+      if(TOTAL===null) TOTAL = d.embedded + d.remaining;
+      done += d.embedded;
+      paint(TOTAL-d.remaining, d.remaining);
+      log((d.rate_limited?'paused':'batch')+': +'+d.embedded+'  remaining '+d.remaining);
+      if(d.remaining===0) break;
+      if(d.rate_limited){
+        pause = Math.min(Math.round(pause*1.6), 120);
+        $('msg').className='msg warn';
+        $('msg').textContent='Free-tier limit reached — waiting '+pause+'s, then continuing…';
+        await sleep(pause*1000);
+      } else {
+        if(d.embedded===0) throw new Error('No progress (remaining '+d.remaining+') — check the function logs.');
+        pause = Math.max(Math.round(pause*0.85), 6);
+        await sleep(pause*1000);
+      }
+    }
+    if(STOP){ $('msg').className='msg warn'; $('msg').textContent='Stopped. Progress is saved — press the button again to resume.'; log('stopped'); }
+    else { $('fill').style.width='100%'; $('msg').className='msg ok';
+      $('msg').textContent='Done — '+TOTAL+' chunks indexed. Open the chatbot and ask away.'; log('done: '+TOTAL); }
+  }catch(e){
+    $('msg').className='msg err'; $('msg').textContent=String(e.message||e); log('error: '+String(e.message||e));
+  }finally{
+    RUNNING=false; $('go').disabled=false; $('stop').disabled=true; paint(TOTAL?TOTAL-($('left').textContent|0):done, $('left').textContent|0);
+  }
+}
+
+$('go').onclick = run;
+$('stop').onclick = ()=>{ STOP=true; };
+(function(){
+  const u=localStorage.getItem('bve_url'), k=localStorage.getItem('bve_key');
+  if(u) $('u').value=u; if(k) $('k').value=k;
+})();
+['u','k','scope'].forEach(id=>$(id).addEventListener('change',()=>{
+  localStorage.setItem('bve_url',$('u').value.trim()); localStorage.setItem('bve_key',$('k').value.trim());
+}));
+</script>
+</body>
+</html>
