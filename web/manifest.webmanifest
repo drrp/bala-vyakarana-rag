@@ -1,6 +1,6 @@
 {
-  "name": "బాల వ్యాకరణము — Bala Vyakarana",
-  "short_name": "Bala Vyakarana",
+  "name": "సంప్రదాయ వ్యాకరణ అధ్యయనం",
+  "short_name": "సంప్రదాయ వ్యాకరణ",
   "description": "Telugu grammar: the sutras of బాల వ్యాకరణము with a retrieval-augmented chatbot over the sutras and commentaries.",
   "lang": "te",
   "id": "/bala-vyakarana-rag/",
