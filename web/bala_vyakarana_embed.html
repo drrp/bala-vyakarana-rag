@@ -187,7 +187,8 @@ async function run(){
 $('go').onclick = run;
 $('stop').onclick = ()=>{ STOP=true; };
 (function(){
-  const u=localStorage.getItem('bala_url'), k=localStorage.getItem('bala_key');
+  const C=window.BALA_CONFIG||{};
+  const u=localStorage.getItem('bala_url')||C.supabaseUrl||'', k=localStorage.getItem('bala_key')||C.supabaseAnonKey||'';
   if(u) $('u').value=u; if(k) $('k').value=k;
 })();
 ['u','k','scope'].forEach(id=>$(id).addEventListener('change',()=>{

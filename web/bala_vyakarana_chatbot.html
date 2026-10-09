@@ -248,8 +248,10 @@ async function send(){
 }
 
 (function(){
-  const u=localStorage.getItem('bala_url'), k=localStorage.getItem('bala_key');
-  if(u&&k){ CFG={url:u,key:k}; startChat(); } else { connectScreen(PROJECT_URL,'',''); }
+  const C=window.BALA_CONFIG||{};
+  const u=localStorage.getItem('bala_url')||C.supabaseUrl||PROJECT_URL;
+  const k=localStorage.getItem('bala_key')||C.supabaseAnonKey||'';
+  if(u&&k){ CFG={url:u,key:k}; startChat(); } else { connectScreen(u,'',''); }
 })();
 </script>
 </body>
