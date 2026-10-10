@@ -298,6 +298,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <button class="tool" id="t-rup">రూపసాధన</button>
   <button class="tool" id="t-gloss">పదకోశం</button>
   <button class="tool" id="t-saved">సేవ్ చేసినవి</button>
+  <button class="tool" id="t-ganas">గణాలు</button>
 </nav>
 <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
 <footer class="foot">
@@ -379,7 +380,7 @@ function connectScreen(u,k,msg,type){
 function startChat(){
   HISTORY=[];
   $('settings').style.display='none'; $('clear').style.display='inline-block';
-  $('tools').style.display='flex'; $('t-quiz').onclick=startQuiz; $('t-rup').onclick=openRupasadhana; $('t-gloss').onclick=openGlossary; $('t-saved').onclick=openSaved;
+  $('tools').style.display='flex'; $('t-quiz').onclick=startQuiz; $('t-rup').onclick=openRupasadhana; $('t-gloss').onclick=openGlossary; $('t-saved').onclick=openSaved; $('t-ganas').onclick=openGanas;
   app.innerHTML =
     '<div class="chat"><div class="thread" id="thread">'+
       '<div class="empty" id="welcome">'+
@@ -463,6 +464,15 @@ async function send(){
   }
 }
 
+var GANAS=["ఏమ్యాది", "కడాది", "ఆడ్వాది", "నిక్కలాది", "అదాది", "వృద్ధాది", "పేర్వాది", "పేదాది", "మగాది", "కయిరాది", "నామ్వాది", "కనుమ్వాది", "మాయ్వాది", "మేన్వాది", "కలన్వాది", "పడ్వాది", "లడంగ్వాది", "అడుగ్వాది", "వలయ్వాది", "వగాది", "తదాది", "కదాది", "బల్లిదాది", "ఓయారాది", "అపదాది", "నపదాది", "తద్ధర్మాది", "లకారాది", "భావార్థకాది", "ఆశీరాది", "డువర్ణకాది", "నిగాగమాది", "ఋత్విగాది", "నిషాది", "గీర్వాణ", "కళ్యాణ్యాది", "ఆకృతి", "యాకృతి", "లాకృతి", "బాకృతి", "పఠిత", "పరిత"];
+function openGanas(){
+  openSheet('గణాలు ('+GANAS.length+')','<p class="sh-sub">వ్యాకరణములోని గణములు — ఏదైనా నొక్కితే ఆ గణములోని పదాలు, చేరే ప్రత్యయము వివరిస్తుంది.</p>'
+    +'<div class="chipwrap" id="ganelist"></div>');
+  var el=$('ganelist');
+  el.innerHTML = GANAS.map(function(g){ return '<button data-g="'+esc(g)+'">'+esc(g)+'</button>'; }).join('');
+  el.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ var g=b.getAttribute('data-g'); closeSheet();
+    askText(g+' గణము గురించి వివరించు — ఈ గణములోని పదాలు, ఆ గణమునకు చేరే ప్రత్యయము/విధి, ఉదాహరణలు సూత్రములతో సహా చెప్పు.'); }; });
+}
 /* ===== study layer ===== */
 function askText(text){ var q=$('q'); if(!q) return; q.value=text; send(); }
 function openSheet(title, inner){
