@@ -207,6 +207,19 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .page-hd h2{margin:0;font-family:var(--font-tel-display);font-size:17px}
 .pback{flex:none;font-family:var(--font-tel);font-size:11.5px;padding:5px 10px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
 .pback:hover{background:var(--surface-2);border-color:var(--accent)}
+.mcq-q{font-family:var(--font-tel);font-size:17px;line-height:1.7;margin:6px 0 14px}
+.mcq-opts{display:flex;flex-direction:column;gap:10px}
+.mcq-opt{display:flex;gap:10px;align-items:flex-start;text-align:left;width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);font-family:var(--font-tel);font-size:15px;cursor:pointer;line-height:1.5}
+.mcq-opt:hover{border-color:var(--accent)}
+.mcq-opt .k{flex:none;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:var(--surface-2);font-family:var(--font-mono);font-size:12px}
+.mcq-opt.ok{border-color:#2e7d32;background:color-mix(in srgb,#2e7d32 14%, var(--surface))}
+.mcq-opt.ok .k{background:#2e7d32;color:#fff}
+.mcq-opt.no{border-color:#c0392b;background:color-mix(in srgb,#c0392b 12%, var(--surface))}
+.mcq-opt.no .k{background:#c0392b;color:#fff}
+.mcq-opt:disabled{cursor:default}
+.mcq-fb{margin-top:14px;padding:12px 14px;border-radius:12px;font-family:var(--font-tel);font-size:14.5px;line-height:1.6}
+.mcq-fb.ok{background:color-mix(in srgb,#2e7d32 14%, var(--surface));border:1px solid #2e7d32}
+.mcq-fb.no{background:color-mix(in srgb,#c0392b 12%, var(--surface));border:1px solid #c0392b}
 .page-body{flex:1;overflow-y:auto;padding:16px calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
 .ansdoc{font-family:var(--font-tel);font-size:16px;line-height:1.8}
 .ansdoc p{margin:0 0 12px}.ansdoc strong{color:var(--accent);font-weight:600}
@@ -474,10 +487,72 @@ function pageFor(name){
   closePage();
 }
 function pageQuiz(){
-  openPage('క్విజ్ — అంశము','<p class="sh-sub">ఏ పరిచ్ఛేదము నుండి ప్రశ్నలు కావాలో నొక్కండి. ప్రశ్నలు కేవలం ఆ పాఠ్యము నుండే — బయటి ప్రశ్నలు ఉండవు.</p><div class="chipwrap" id="pg-list"></div>',
+  openPage('క్విజ్ — అంశము','<p class="sh-sub">ఏ పరిచ్ఛేదము నుండి ప్రశ్నలు కావాలో నొక్కండి. ప్రశ్నలు కేవలం ఆ పాఠ్యము (సూత్రము, వ్యాఖ్యానము, ఉదాహరణలు) నుండే.</p><div class="chipwrap" id="pg-list"></div>',
     function(){ var el=$('pg-list');
       el.innerHTML=QUIZ_TOPICS.map(function(t){ return '<button data-t="'+esc(t)+'">'+esc(t)+'</button>'; }).join('');
-      el.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ closePage(); startQuizOn(b.getAttribute('data-t')); }; }); });
+      el.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ startQuizMCQ(b.getAttribute('data-t')); }; }); });
+}
+function mcqPrompt(topic, mat){
+  var material=(mat&&mat.length)
+    ? mat.map(function(x,i){ return '['+(i+1)+'] ('+x.doc+' \u00b7 '+x.ref+')\n'+x.content; }).join('\n\n')
+    : '(పాఠ్యము లభించలేదు)';
+  return 'క్విజ్ \u2014 బహుళైచ్ఛిక ప్రశ్న ('+topic+').\n'
+   +'క్రింది పాఠ్యము (సూత్రము, దాని వ్యాఖ్యానము, ఉదాహరణలు) ఆధారంగా ఒకే ఒక బహుళైచ్ఛిక ప్రశ్న తయారుచేయి. ప్రశ్న కేవలం ఈ పాఠ్యములోని విషయము నుండే ఉండాలి \u2014 బయటి సాధారణ విషయాలు అడగకూడదు. ఎంపికలు సాధ్యమైనంతవరకు ఒకే పొడవులో ఉండాలి.\n'
+   +'జవాబును ఖచ్చితంగా ఈ క్రింది ఆకృతిలో మాత్రమే ఇవ్వు \u2014 ముందు గానీ తర్వాత గానీ ఏ మాటా రాయకు:\n'
+   +'ప్రశ్న: <ప్రశ్న>\nఎంపిక1: <ఎంపిక>\nఎంపిక2: <ఎంపిక>\nఎంపిక3: <ఎంపిక>\nఎంపిక4: <ఎంపిక>\nసరైన: <1, 2, 3 లేదా 4>\nవివరణ: <ఒక వాక్యము, సూత్ర సూచికతో>\n\n'
+   +'పాఠ్యము:\n'+material;
+}
+function parseMCQ(t){
+  var q=null, opts=[null,null,null,null], ans=null, exp=null, m;
+  String(t||'').split('\n').forEach(function(raw){
+    var ln=raw.replace(/^\s*[-*#]+\s*/,'').trim();
+    if((m=ln.match(/^ప్రశ్న\s*[:\uff1a]\s*(.+)$/))) q=m[1];
+    else if((m=ln.match(/^ఎంపిక\s*([1-4])\s*[:\uff1a]\s*(.+)$/))) opts[+m[1]-1]=m[2];
+    else if((m=ln.match(/^సరైన\s*[:\uff1a]\s*([1-4])/))) ans=+m[1]-1;
+    else if((m=ln.match(/^వివరణ\s*[:\uff1a]\s*(.+)$/))) exp=m[1];
+  });
+  if(!q || ans===null || opts.some(function(o){ return !o; })) return null;
+  return {q:q, opts:opts, ans:ans, exp:exp};
+}
+function renderMCQ(topic, mcq){
+  var html='<p class="sh-sub">'+esc(topic)+' \u2014 సరైన ఎంపికను నొక్కండి.</p>'
+   +'<div class="mcq-q">'+esc(mcq.q)+'</div><div class="mcq-opts" id="mcq-opts">'
+   + mcq.opts.map(function(o,i){ return '<button class="mcq-opt" data-i="'+i+'"><span class="k">'+String.fromCharCode(65+i)+'</span><span>'+esc(o)+'</span></button>'; }).join('')
+   + '</div><div id="mcq-fb"></div>'
+   + '<div class="acts" style="margin-top:16px"><button class="btn primary" id="mcq-next">తర్వాతి ప్రశ్న</button><button class="btn" id="mcq-chg">అంశము మార్చు</button></div>';
+  openPage('క్విజ్ \u2014 '+topic, html, function(){
+    $('mcq-next').onclick=function(){ startQuizMCQ(topic); };
+    $('mcq-chg').onclick=function(){ pageQuiz(); };
+    document.querySelectorAll('#mcq-opts .mcq-opt').forEach(function(b){
+      b.onclick=function(){
+        var i=+b.getAttribute('data-i'), correct=mcq.ans;
+        document.querySelectorAll('#mcq-opts .mcq-opt').forEach(function(x){ x.disabled=true; });
+        if(i===correct) b.classList.add('ok');
+        else { b.classList.add('no'); var cb=document.querySelector('#mcq-opts .mcq-opt[data-i="'+correct+'"]'); if(cb) cb.classList.add('ok'); }
+        $('mcq-fb').innerHTML='<div class="mcq-fb '+(i===correct?'ok':'no')+'"><b>'+(i===correct?'సరైనది':'సరికాదు')+'</b> \u2014 సరైన సమాధానం: '+esc(mcq.opts[correct])+(mcq.exp?('<br>'+esc(mcq.exp)):'')+'</div>';
+      };
+    });
+  });
+}
+function quizRetry(topic, msg){
+  openPage('క్విజ్ \u2014 '+topic, msg+'<div class="acts" style="margin-top:16px"><button class="btn primary" id="mcq-next">మళ్లీ ప్రయత్నించు</button><button class="btn" id="mcq-chg">అంశము మార్చు</button></div>',
+    function(){ $('mcq-next').onclick=function(){ startQuizMCQ(topic); }; $('mcq-chg').onclick=function(){ pageQuiz(); }; });
+}
+function startQuizMCQ(topic){
+  openPage('క్విజ్ \u2014 '+topic,'<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> ప్రశ్న తయారుచేస్తోంది\u2026</div>');
+  var ch=(topic==='అన్నీ')?null:topic;
+  fetchQuizMaterial(ch,3).then(function(mat){
+    var prompt=mcqPrompt(topic, mat);
+    return fetch(CFG.url+FN,{method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+CFG.key,'apikey':CFG.key},
+      body:JSON.stringify({messages:[{role:'user',content:prompt}], match_count:8})})
+      .then(function(r){ return r.json().catch(function(){return {};}).then(function(d){
+        if(!r.ok||d.error) throw new Error(d.error||('HTTP '+r.status)); return d.answer||''; }); });
+  }).then(function(ans){
+    var mcq=parseMCQ(ans);
+    if(mcq) renderMCQ(topic, mcq);
+    else quizRetry(topic, '<div class="ansdoc">'+md(ans)+'</div>');
+  }).catch(function(e){ quizRetry(topic, '<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,300))+'</p>'); });
 }
 
 
@@ -552,24 +627,8 @@ function fetchQuizMaterial(chapter, n){
         });
     });
 }
-function buildQuizPrompt(topic, mat){
-  var material = (mat&&mat.length)
-    ? mat.map(function(x,i){ return '['+(i+1)+'] ('+x.doc+' · '+x.ref+')\n'+x.content; }).join('\n\n')
-    : '(పాఠ్యము లభించలేదు — ఇచ్చిన excerpts నుండే అడుగు.)';
-  return 'క్విజ్ ('+topic+'). క్రింద ఇచ్చిన పాఠ్యము — సూత్రము, దాని వ్యాఖ్యానము, ఉదాహరణలు — ఆధారంగానే పరీక్షించు.\n'
-   +'నియమములు:\n'
-   +'1. ప్రశ్న కేవలం ఈ పాఠ్యములోని సూత్రము/వ్యాఖ్యానము/ఉదాహరణల నుండే అడగాలి. ఈ పాఠ్యములో లేని సాధారణ ప్రశ్నలు ఎప్పుడూ అడగకూడదు.\n'
-   +'2. ఒక్కోసారి ఒకే ఒక ప్రశ్న. ప్రశ్న ఏ సూత్రము ఆధారంగా అడిగావో ఆ సూచికను (ఉదా: (బా.వ్యా. ...)) చెప్పు.\n'
-   +'3. నా సమాధానము తర్వాత, ఈ పాఠ్యము ఆధారంగానే సరిచూసి, మొదట "సరైనది" లేదా "సరికాదు" అని స్పష్టంగా చెప్పి, సరైన సమాధానాన్ని పాఠ్యములోని మాటలతో, సూత్ర సూచికతో ఇచ్చి, తర్వాతి ప్రశ్న అడుగు.\n\n'
-   +'పాఠ్యము:\n'+material;
-}
-function startQuizOn(topic){
-  closePage();
-  var scope = (topic==='అన్నీ') ? null : topic;
-  fetchQuizMaterial(scope, 3)
-    .then(function(mat){ send({display:'క్విజ్ — '+topic, prompt:buildQuizPrompt(topic, mat)}); })
-    .catch(function(){ send({display:'క్విజ్ — '+topic, prompt:buildQuizPrompt(topic, [])}); });
-}
+
+
 
 
 (function(){
