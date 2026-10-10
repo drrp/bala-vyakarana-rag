@@ -531,18 +531,25 @@ function closeSheet(){
 var QUIZ_TOPICS=['సంధి','సమాస','కారక','తద్ధిత','కృదంత','ఆచ్ఛిక','తత్సమ','ప్రకీర్ణ','సంజ్ఞా','క్రియా','అన్నీ'];
 
 function fetchQuizMaterial(chapter, n){
-  var url=CFG.url+'/rest/v1/bala_vyakarana_chunks?select=doc,ref,content,chapter_title&ref=like.*sutra*&limit=500';
-  return fetch(url,{headers:{'apikey':CFG.key,'Authorization':'Bearer '+CFG.key}})
+  var ch = (chapter && chapter!=='అన్నీ') ? chapter : null;
+  // preferred: the quiz_sutras RPC (returns just the sutras we need)
+  return fetch(CFG.url+'/rest/v1/rpc/quiz_sutras',{method:'POST',
+      headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},
+      body:JSON.stringify({p_chapter: ch, p_n: (n||6)})})
     .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-    .then(function(rows){
-      if(!Array.isArray(rows)||!rows.length) throw new Error('no rows');
-      var pool=rows.filter(function(x){ return x.content && x.content.length>40; });
-      if(chapter && chapter!=='అన్నీ'){
-        var f=pool.filter(function(x){ return ((x.doc||'')+(x.chapter_title||'')).indexOf(chapter)!==-1; });
-        if(f.length) pool=f;
-      }
-      for(var i=pool.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
-      return pool.slice(0,n||6);
+    .then(function(rows){ if(!Array.isArray(rows)||!rows.length) throw new Error('empty'); return rows; })
+    .catch(function(){
+      // fallback: read the sutra rows directly
+      var url=CFG.url+'/rest/v1/bala_vyakarana_chunks?select=doc,ref,content,chapter_title&ref=like.*sutra*&limit=500';
+      return fetch(url,{headers:{'apikey':CFG.key,'Authorization':'Bearer '+CFG.key}})
+        .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(function(rows){
+          if(!Array.isArray(rows)||!rows.length) throw new Error('no rows');
+          var pool=rows.filter(function(x){ return x.content && x.content.length>40; });
+          if(ch){ var f=pool.filter(function(x){ return ((x.doc||'')+(x.chapter_title||'')).indexOf(ch)!==-1; }); if(f.length) pool=f; }
+          for(var i=pool.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
+          return pool.slice(0,n||6);
+        });
     });
 }
 function buildQuizPrompt(topic, mat){
