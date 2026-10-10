@@ -208,28 +208,9 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .page-hd h2{margin:0;font-family:var(--font-tel-display);font-size:17px}
 .pback{flex:none;font-family:var(--font-tel);font-size:11.5px;padding:5px 10px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
 .pback:hover{background:var(--surface-2);border-color:var(--accent)}
-.mcq-q{font-family:var(--font-tel);font-size:21px;font-weight:600;line-height:1.6;margin:8px 0 18px;color:var(--ink)}
-.mcq-opts{display:flex;flex-direction:column;gap:12px}
-.mcq-opt{display:flex;gap:13px;align-items:flex-start;text-align:left;width:100%;padding:16px 18px;border-radius:14px;border:2px solid var(--line-strong);background:var(--surface);color:var(--ink);font-family:var(--font-tel);font-size:18px;font-weight:600;cursor:pointer;line-height:1.55}
-.mcq-opt:hover{border-color:var(--accent)}
-.mcq-opt .k{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--surface-2);font-family:var(--font-mono);font-size:14px;font-weight:700}
-.mcq-opt.ok{border-color:#2e7d32;border-width:2.5px;background:color-mix(in srgb,#2e7d32 16%, var(--surface))}
-.mcq-opt.ok .k{background:#2e7d32;color:#fff}
-.mcq-opt.no{border-color:#c0392b;border-width:2.5px;background:color-mix(in srgb,#c0392b 14%, var(--surface))}
-.mcq-opt.no .k{background:#c0392b;color:#fff}
-.mcq-opt:disabled{cursor:default}
-.mcq-fb{margin-top:16px;padding:16px 18px;border-radius:14px;font-family:var(--font-tel);font-size:17px;font-weight:500;line-height:1.65}
-.mcq-fb b{font-size:18.5px;font-weight:700}
-.mcq-fb.ok{background:color-mix(in srgb,#2e7d32 14%, var(--surface));border:1px solid #2e7d32}
-.mcq-fb.no{background:color-mix(in srgb,#c0392b 12%, var(--surface));border:1px solid #c0392b}
 @media (min-width:760px){
   .page-body>*{max-width:840px;margin-left:auto;margin-right:auto}
-  .mcq-q{font-size:25px}.mcq-opt{font-size:19.5px;padding:19px 22px}.mcq-fb{font-size:18px}
   .page .sh-sub{font-size:15px}
-}
-@media (max-width:400px){
-  .mcq-q{font-size:19px}.mcq-opt{font-size:16.5px;padding:14px 15px;gap:10px}.mcq-opt .k{width:26px;height:26px;font-size:12.5px}
-  .mcq-fb{font-size:15.5px}.mcq-fb b{font-size:16.5px}
 }
 .page-body{flex:1;overflow-y:auto;padding:16px calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
 .ansdoc{font-family:var(--font-tel);font-size:16px;line-height:1.8}
@@ -303,7 +284,6 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 </header>
 <nav class="tools" id="tools" style="display:none">
   <button class="tool" data-page="chat">సంభాషణ</button>
-  <button class="tool" data-page="quiz">క్విజ్</button>
   <button class="tool" data-page="saved">సేవ్</button>
 </nav>
 <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
@@ -481,96 +461,25 @@ function openPage(title, inner, ready){
   if(ready) ready();
 }
 function closePage(){ $('page').style.display='none'; }
-function askIsolated(prompt, el){
-  el.innerHTML='<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> thinking…</div>';
-  fetch(CFG.url+FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+CFG.key,'apikey':CFG.key},
-    body:JSON.stringify({messages:[{role:'user',content:prompt}], match_count:12})})
-  .then(function(res){ return res.json().catch(function(){return {};}).then(function(d){ return {ok:res.ok,status:res.status,d:d}; }); })
-  .then(function(r){ if(!r.ok||r.d.error) throw new Error(r.d.error||('HTTP '+r.status));
-    el.innerHTML='<div class="ansdoc">'+md(r.d.answer||'(no answer)')+'</div>'; })
-  .catch(function(){ el.innerHTML='<p style="color:#c0392b">సంబంధం లేదు — ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.</p>'; });
-}
-function toolBack(label){ return '<button class="pback" id="pgback">← '+esc(label)+'</button>'; }
-function wireBack(fn){ var b=$('pgback'); if(b) b.onclick=fn; }
+
+
 function pageFor(name){
-  if(name==='quiz') return pageQuiz();
   if(name==='saved') return pageSaved();
   closePage();
 }
-function pageQuiz(){
-  openPage('క్విజ్ — అంశము','<p class="sh-sub">ఏ పరిచ్ఛేదము నుండి ప్రశ్నలు కావాలో నొక్కండి. ప్రశ్నలు కేవలం ఆ పాఠ్యము (సూత్రము, వ్యాఖ్యానము, ఉదాహరణలు) నుండే.</p><div class="chipwrap" id="pg-list"></div>',
-    function(){ var el=$('pg-list');
-      el.innerHTML=QUIZ_TOPICS.map(function(t){ return '<button data-t="'+esc(t)+'">'+esc(t)+'</button>'; }).join('');
-      el.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ startQuizMCQ(b.getAttribute('data-t')); }; }); });
-}
-function mcqPrompt(topic, mat){
-  var material=(mat&&mat.length)
-    ? mat.map(function(x,i){ return '['+(i+1)+'] ('+x.doc+' \u00b7 '+x.ref+')\n'+x.content; }).join('\n\n')
-    : '(పాఠ్యము లభించలేదు)';
-  return 'క్విజ్ \u2014 బహుళైచ్ఛిక ప్రశ్న ('+topic+').\n'
-   +'క్రింది పాఠ్యము (సూత్రము, దాని వ్యాఖ్యానము, ఉదాహరణలు) ఆధారంగా ఒకే ఒక బహుళైచ్ఛిక ప్రశ్న తయారుచేయి. ప్రశ్న కేవలం ఈ పాఠ్యములోని విషయము నుండే ఉండాలి \u2014 బయటి సాధారణ విషయాలు అడగకూడదు. ఎంపికలు సాధ్యమైనంతవరకు ఒకే పొడవులో ఉండాలి.\n'
-   +'జవాబును ఖచ్చితంగా ఈ క్రింది ఆకృతిలో మాత్రమే ఇవ్వు \u2014 ముందు గానీ తర్వాత గానీ ఏ మాటా రాయకు:\n'
-   +'ప్రశ్న: <ప్రశ్న>\nఎంపిక1: <ఎంపిక>\nఎంపిక2: <ఎంపిక>\nఎంపిక3: <ఎంపిక>\nఎంపిక4: <ఎంపిక>\nసరైన: <1, 2, 3 లేదా 4>\nవివరణ: <ఒక వాక్యము, సూత్ర సూచికతో>\n\n'
-   +'పాఠ్యము:\n'+material;
-}
-function parseMCQ(t){
-  var q=null, opts=[null,null,null,null], ans=null, exp=null, m;
-  String(t||'').split('\n').forEach(function(raw){
-    var ln=raw.replace(/^\s*[-*#]+\s*/,'').trim();
-    if((m=ln.match(/^ప్రశ్న\s*[:\uff1a]\s*(.+)$/))) q=m[1];
-    else if((m=ln.match(/^ఎంపిక\s*([1-4])\s*[:\uff1a]\s*(.+)$/))) opts[+m[1]-1]=m[2];
-    else if((m=ln.match(/^సరైన\s*[:\uff1a]\s*([1-4])/))) ans=+m[1]-1;
-    else if((m=ln.match(/^వివరణ\s*[:\uff1a]\s*(.+)$/))) exp=m[1];
-  });
-  if(!q || ans===null || opts.some(function(o){ return !o; })) return null;
-  return {q:q, opts:opts, ans:ans, exp:exp};
-}
-function renderMCQ(topic, mcq){
-  var html='<p class="sh-sub">'+esc(topic)+' \u2014 సరైన ఎంపికను నొక్కండి.</p>'
-   +'<div class="mcq-q">'+esc(mcq.q)+'</div><div class="mcq-opts" id="mcq-opts">'
-   + mcq.opts.map(function(o,i){ return '<button class="mcq-opt" data-i="'+i+'"><span class="k">'+String.fromCharCode(65+i)+'</span><span>'+esc(o)+'</span></button>'; }).join('')
-   + '</div><div id="mcq-fb"></div>'
-   + '<div class="acts" style="margin-top:16px"><button class="btn primary" id="mcq-next">తర్వాతి ప్రశ్న</button><button class="btn" id="mcq-chg">అంశము మార్చు</button></div>';
-  openPage('క్విజ్ \u2014 '+topic, html, function(){
-    $('mcq-next').onclick=function(){ startQuizMCQ(topic); };
-    $('mcq-chg').onclick=function(){ pageQuiz(); };
-    document.querySelectorAll('#mcq-opts .mcq-opt').forEach(function(b){
-      b.onclick=function(){
-        var i=+b.getAttribute('data-i'), correct=mcq.ans;
-        document.querySelectorAll('#mcq-opts .mcq-opt').forEach(function(x){ x.disabled=true; });
-        if(i===correct) b.classList.add('ok');
-        else { b.classList.add('no'); var cb=document.querySelector('#mcq-opts .mcq-opt[data-i="'+correct+'"]'); if(cb) cb.classList.add('ok'); }
-        $('mcq-fb').innerHTML='<div class="mcq-fb '+(i===correct?'ok':'no')+'"><b>'+(i===correct?'సరైనది':'సరికాదు')+'</b> \u2014 సరైన సమాధానం: '+esc(mcq.opts[correct])+(mcq.exp?('<br>'+esc(mcq.exp)):'')+'</div>';
-      };
-    });
-  });
-}
-function quizRetry(topic, msg){
-  openPage('క్విజ్ \u2014 '+topic, msg+'<div class="acts" style="margin-top:16px"><button class="btn primary" id="mcq-next">మళ్లీ ప్రయత్నించు</button><button class="btn" id="mcq-chg">అంశము మార్చు</button></div>',
-    function(){ $('mcq-next').onclick=function(){ startQuizMCQ(topic); }; $('mcq-chg').onclick=function(){ pageQuiz(); }; });
-}
-function startQuizMCQ(topic){
-  openPage('క్విజ్ \u2014 '+topic,'<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> ప్రశ్న తయారుచేస్తోంది\u2026</div>');
-  var ch=(topic==='అన్నీ')?null:topic;
-  fetchQuizMaterial(ch,3).then(function(mat){
-    var prompt=mcqPrompt(topic, mat);
-    return fetch(CFG.url+FN,{method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+CFG.key,'apikey':CFG.key},
-      body:JSON.stringify({messages:[{role:'user',content:prompt}], match_count:8})})
-      .then(function(r){ return r.json().catch(function(){return {};}).then(function(d){
-        if(!r.ok||d.error) throw new Error(d.error||('HTTP '+r.status)); return d.answer||''; }); });
-  }).then(function(ans){
-    var mcq=parseMCQ(ans);
-    if(mcq) renderMCQ(topic, mcq);
-    else quizRetry(topic, '<div class="ansdoc">'+md(ans)+'</div>');
-  }).catch(function(e){ quizRetry(topic, '<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,300))+'</p>'); });
-}
 
 
-
-
-
-
+var SAVED_KEY='bala_saved_v1';
+function loadSaved(){ try{ var a=JSON.parse(localStorage.getItem(SAVED_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function storeSaved(a){ try{ localStorage.setItem(SAVED_KEY, JSON.stringify(a)); }catch(e){} }
+function saveAnswer(q, a, sb){
+  var arr=loadSaved();
+  var i=-1; for(var k=0;k<arr.length;k++){ if(arr[k].a===a){ i=k; break; } }
+  if(i>=0){ arr.splice(i,1); storeSaved(arr); if(sb){ sb.classList.remove('on'); sb.textContent='\u2606 \u0c38\u0c47\u0c35\u0c4d'; } return; }
+  arr.unshift({q:q, a:a, ts:Date.now(), note:''});
+  storeSaved(arr);
+  if(sb){ sb.classList.add('on'); sb.textContent='\u2605 \u0c38\u0c47\u0c35\u0c4d \u0c05\u0c2f\u0c3f\u0c02\u0c26\u0c3f'; }
+}
 function pageSaved(){
   var arr=loadSaved();
   var html='<p class="sh-sub">సేవ్ చేసిన సమాధానాలు'+(arr.length?(' ('+arr.length+')'):'')+' — ఈ పరికరంలో నిల్వ.</p>';
@@ -594,52 +503,6 @@ function pageSaved(){
 
 /* ===== study layer ===== */
 function askText(text){ var q=$('q'); if(!q) return; q.value=text; send(); }
-function openSheet(title, inner){
-  var bg=document.getElementById('sheetbg'), sh=document.getElementById('sheet');
-  if(!bg){
-    bg=document.createElement('div'); bg.id='sheetbg'; bg.className='sheet-bg'; document.body.appendChild(bg);
-    sh=document.createElement('div'); sh.id='sheet'; sh.className='sheet'; document.body.appendChild(sh);
-    bg.addEventListener('click', closeSheet);
-  }
-  sh.innerHTML='<h3>'+esc(title)+'</h3>'+inner;
-  requestAnimationFrame(function(){ bg.classList.add('open'); sh.classList.add('open'); });
-}
-function closeSheet(){
-  var bg=document.getElementById('sheetbg'), sh=document.getElementById('sheet');
-  if(bg) bg.classList.remove('open'); if(sh) sh.classList.remove('open');
-}
-
-
-
-
-
-
-var QUIZ_TOPICS=['సంధి','సమాస','కారక','తద్ధిత','కృదంత','ఆచ్ఛిక','తత్సమ','ప్రకీర్ణ','సంజ్ఞా','క్రియా','అన్నీ'];
-
-function fetchQuizMaterial(chapter, n){
-  var ch = (chapter && chapter!=='అన్నీ') ? chapter : null;
-  // preferred: the quiz_sutras RPC (returns just the sutras we need)
-  return fetch(CFG.url+'/rest/v1/rpc/quiz_sutras',{method:'POST',
-      headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},
-      body:JSON.stringify({p_chapter: ch, p_n: (n||3)})})
-    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-    .then(function(rows){ if(!Array.isArray(rows)||!rows.length) throw new Error('empty'); return rows; })
-    .catch(function(){
-      // fallback: read the sutra rows directly
-      var url=CFG.url+'/rest/v1/bala_vyakarana_chunks?select=doc,ref,content,chapter_title&ref=like.*sutra*&limit=500';
-      return fetch(url,{headers:{'apikey':CFG.key,'Authorization':'Bearer '+CFG.key}})
-        .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-        .then(function(rows){
-          if(!Array.isArray(rows)||!rows.length) throw new Error('no rows');
-          var pool=rows.filter(function(x){ return x.content && x.content.length>40; });
-          if(ch){ var f=pool.filter(function(x){ return ((x.doc||'')+(x.chapter_title||'')).indexOf(ch)!==-1; }); if(f.length) pool=f; }
-          for(var i=pool.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
-          return pool.slice(0,n||3);
-        });
-    });
-}
-
-
 
 
 (function(){
