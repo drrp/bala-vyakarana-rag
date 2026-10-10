@@ -105,6 +105,8 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .composer textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
 footer{padding:8px 22px 14px;color:var(--text-faint);font-size:11.5px;font-family:var(--font-mono);text-align:center}
 @media (max-width:700px){.brand .tl{display:none}.bub{max-width:92%}}
+.logo{height:42px;width:auto;display:block}
+.credit{margin:3px 0 0;font-size:11.5px;color:var(--text-faint);font-family:var(--font-tel)}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#b4441f">
@@ -119,9 +121,10 @@ footer{padding:8px 22px 14px;color:var(--text-faint);font-size:11.5px;font-famil
 <body>
 <header class="top">
   <div class="brand">
-    <div class="mark">సం</div>
+    <img class="logo" src="auchithyam-logo.png" alt="Auchithyam">
     <div>
       <h1>సంప్రదాయ వ్యాకరణ అధ్యయనం<span class="badge" id="badge" style="display:none">● live</span></h1>
+      <p class="credit">Developed by శతావధాని డా. రాంభట్ల పార్వతీశ్వర శర్మ</p>
     </div>
   </div>
   <div class="right">
@@ -206,12 +209,11 @@ function startChat(){
   $('settings').style.display='none'; $('clear').style.display='inline-block'; $('badge').style.display='inline';
   app.innerHTML =
     '<div class="chat"><div class="thread" id="thread">'+
-      '<div class="empty" id="welcome"><h2>నమస్కారం! సంప్రదాయవ్యాకరణ అధ్యయనం ప్రారంభించండి!</h2>'+
+      '<div class="empty" id="welcome"><h2>నమస్కారం! Ask about సంప్రదాయ వ్యాకరణ అధ్యయనం</h2>'+
       '<div class="eg">'+
         '<button>సంధి అంటే ఏమిటి?</button>'+
         '<button>దానికి ఉదాహరణ చెప్పు</button>'+
         '<button>కారకములు ఎన్ని రకములు?</button>'+
-        '<button>నిపాత సూత్రాలను పూర్తిగా వివరించు</button>'+
         '<button>What is a tatsama word?</button>'+
       '</div></div>'+
     '</div></div>'+
@@ -231,7 +233,7 @@ function startChat(){
 
 function bubble(role, html){
   const t=document.createElement('div'); t.className='turn '+role;
-  t.innerHTML='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'ప్రశ్న':'సమాధానం')+'</div>'+
+  t.innerHTML='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'నే':'బా')+'</div>'+
               '<div class="bub">'+html+'</div>';
   return t;
 }
@@ -242,7 +244,7 @@ async function send(){
   thread.appendChild(bubble('user','<p>'+esc(text)+'</p>'));
   HISTORY.push({role:'user', content:text});
   const load=document.createElement('div'); load.className='turn';
-  load.innerHTML='<div class="av a">సమాధానం</div><div class="bub"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> thinking…</div></div>';
+  load.innerHTML='<div class="av a">బా</div><div class="bub"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> thinking…</div></div>';
   thread.appendChild(load); load.scrollIntoView({behavior:'smooth',block:'end'});
   $('send').disabled=true;
   try{

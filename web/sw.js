@@ -1,6 +1,6 @@
 // Offline shell for the బాల వ్యాకరణము app.
 // Caches this origin's own files only — Supabase / Gemini / font CDNs always go to the network.
-const CACHE = "bala-vyakarana-v3";
+const CACHE = "bala-vyakarana-v5";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./pwa.js", "./config.js",
   "./bala_vyakarana_chatbot.html",
@@ -34,7 +34,7 @@ self.addEventListener("fetch", (e) => {
 
   const isHTML = req.mode === "navigate" || (req.headers.get("accept") || "").indexOf("text/html") !== -1;
   // config.js carries the connection settings, so it must never be served stale.
-  const isConfig = url.pathname.endsWith("/config.js");
+  const isConfig = url.pathname.endsWith("/config.js") || url.pathname.endsWith("/manifest.webmanifest");
 
   // network first, so a redeploy is picked up on the next load
   if (isHTML || isConfig) {
