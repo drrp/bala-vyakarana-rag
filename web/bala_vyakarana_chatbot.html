@@ -52,24 +52,28 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
 /* ---------- header ---------- */
 .top{position:relative;z-index:2;display:flex;gap:16px;align-items:center;flex-wrap:wrap;
   padding:calc(12px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) 12px calc(18px + env(safe-area-inset-left));
-  background:linear-gradient(180deg,var(--bg),color-mix(in srgb,var(--bg) 80%, transparent));
+  background:
+    radial-gradient(150% 240% at 1% -30%, color-mix(in srgb,var(--accent) 30%, transparent), transparent 62%),
+    radial-gradient(130% 220% at 100% -22%, color-mix(in srgb,var(--gold) 30%, transparent), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb,var(--surface-2) 94%, var(--bg)), var(--bg));
   border-bottom:1px solid var(--line)}
 .top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
-  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 55%, transparent),transparent)}
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--gold) 55%, transparent),color-mix(in srgb,var(--accent) 68%, transparent),color-mix(in srgb,var(--gold) 55%, transparent),transparent)}
 .brand{display:flex;gap:13px;align-items:center}
 .logo{height:44px;width:auto;display:block}
 @media (prefers-color-scheme: dark){
   .logo{background:#efe6d3;border-radius:10px;padding:4px 7px;box-sizing:content-box;box-shadow:var(--shadow-1)}
 }
 .brand-txt h1{margin:0;font-family:var(--font-tel-display);font-size:19px;font-weight:600;letter-spacing:.1px;
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand,.brand-txt{min-width:0}
 .foot{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;justify-content:center;
   padding:9px calc(16px + env(safe-area-inset-right)) calc(9px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
   border-top:1px solid var(--line);background:var(--bg);color:var(--ink-faint);font-size:11.5px;font-family:var(--font-mono);text-align:center}
 .foot .tel{font-family:var(--font-tel);color:var(--ink-dim)}
 .foot .sep{color:var(--gold)}
 @media (max-width:700px){.foot{font-size:11px;gap:2px 8px}}
-.right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.right{margin-left:auto;display:flex;gap:10px;align-items:center;flex:none}
 .btn{font-family:var(--font-body);font-size:13px;font-weight:500;padding:9px 15px;border-radius:var(--r-sm);
   border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;
   transition:transform .14s var(--ease),background .18s,border-color .18s,box-shadow .18s}
@@ -180,7 +184,14 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 @keyframes b{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 @keyframes pulse{0%{opacity:.55;transform:scale(1)}70%{opacity:0;transform:scale(1.18)}100%{opacity:0;transform:scale(1.18)}}
 
-@media (max-width:700px){.brand .tl{display:none}.bub{max-width:92%}.empty h2{font-size:20px}}
+@media (max-width:700px){
+  .bub{max-width:92%}.empty h2{font-size:20px}
+  .top{flex-wrap:nowrap;gap:10px;padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right))}
+  .brand{gap:10px}.brand-txt h1{font-size:15px}
+  .logo{height:34px}
+  #clear{padding:3px 9px;font-size:10.5px}
+}
+@media (max-width:400px){.brand-txt h1{font-size:13.5px}.logo{height:30px}}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
 }
