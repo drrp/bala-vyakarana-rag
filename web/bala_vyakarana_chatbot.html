@@ -6,16 +6,16 @@
 <title>సంప్రదాయ వ్యాకరణ అధ్యయనం</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+Telugu:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Mandali&family=Mallanna&family=Ramabhadra&family=NTR&family=Noto+Serif+Telugu:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#faf7f2; --surface:#ffffff; --surface-2:#f4efe7;
   --border:rgba(58,42,26,.14); --border-strong:rgba(58,42,26,.26);
   --text:#2a251f; --text-dim:#6f6558; --text-faint:#9a8f80;
   --accent:#b4441f; --accent-dim:#f3e3da; --sage:#5f7a4f; --gold:#a9772a;
-  --font-display:"Instrument Serif",Georgia,serif;
-  --font-body:"IBM Plex Sans","Noto Sans Telugu",system-ui,sans-serif;
-  --font-tel:"Noto Serif Telugu","Noto Sans Telugu",serif;
+  --font-display:"Ramabhadra","Instrument Serif",Georgia,serif;
+  --font-body:"IBM Plex Sans","Mallanna",system-ui,sans-serif;
+  --font-tel:"Mandali","Noto Serif Telugu",serif;
   --font-mono:"IBM Plex Mono",ui-monospace,monospace;
   --shadow:0 1px 2px rgba(40,30,15,.05),0 8px 24px rgba(40,30,15,.05);
 }
@@ -107,6 +107,9 @@ footer{padding:8px 22px 14px;color:var(--text-faint);font-size:11.5px;font-famil
 @media (max-width:700px){.brand .tl{display:none}.bub{max-width:92%}}
 .logo{height:42px;width:auto;display:block}
 .credit{margin:3px 0 0;font-size:11.5px;color:var(--text-faint);font-family:var(--font-tel)}
+.brand h1{font-family:"Ramabhadra","Mandali",serif}
+.bub .hd{font-family:"Ramabhadra","Mandali",serif}
+.bub .sutra{font-family:"Ramabhadra","Mandali",serif}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#b4441f">
@@ -218,7 +221,7 @@ function startChat(){
       '</div></div>'+
     '</div></div>'+
     '<div class="composer"><div class="in">'+
-      '<textarea id="q" rows="1" placeholder="Type a message… (Telugu or English)"></textarea>'+
+      '<textarea id="q" rows="1" placeholder="అడగండి"></textarea>'+
       '<button class="btn primary" id="send">Send</button>'+
     '</div></div>';
   $('settings').onclick=()=>connectScreen(CFG.url,CFG.key,'');
