@@ -272,12 +272,12 @@ async function send(){
     load.remove();
     thread.appendChild(bubble('assistant',md(answer)));
   }catch(e){
-    load.remove();
-    thread.appendChild(bubble('assistant','<p style="color:#c0392b">'+esc(String(e.message||e))+'</p>'));
-  }finally{
-    $('send').disabled=false; if(window.matchMedia('(pointer:fine)').matches) q.focus();
-    thread.appendChild(bubble('assistant','<p style="color:#c0392b">సంబంధం లేదు — ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.</p>'));
-  }
+ load.remove();
+ thread.appendChild(bubble('assistant','<p style="color:#c0392b">సంబంధం లేదు — ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.</p>'));
+ }finally{
+ $('send').disabled=false; if(window.matchMedia('(pointer:fine)').matches) q.focus();
+ thread.lastChild.scrollIntoView({behavior:'smooth',block:'end'});
+ }
 }
 
 (function(){
