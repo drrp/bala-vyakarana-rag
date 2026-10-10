@@ -395,7 +395,7 @@ function startChat(){
   const q=$('q');
   q.addEventListener('input',()=>{ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,170)+'px'; });
   q.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
-  $('send').onclick=send;
+  $('send').onclick=function(){ send(); };
   document.querySelectorAll('.eg button').forEach((b,i)=>{ b.style.animationDelay=(0.03*i)+'s'; b.onclick=()=>{ q.value=b.textContent; send(); }; });
   if(window.matchMedia('(pointer:fine)').matches) q.focus();
 }
@@ -442,7 +442,7 @@ async function send(override){
     thread.appendChild(bubble('assistant',md(answer),{q:shown,a:answer}));
   }catch(e){
     load.remove();
-    thread.appendChild(bubble('assistant','<p style="color:#c0392b">సంబంధం లేదు — ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.</p>'));
+    thread.appendChild(bubble('assistant','<p style="color:#c0392b">లోపం: '+esc(String(e && e.message || e).slice(0,300))+'</p>'));
   }finally{
     $('send').disabled=false; if(window.matchMedia('(pointer:fine)').matches && q) q.focus();
     thread.lastChild.scrollIntoView({behavior:'smooth',block:'end'});
@@ -535,7 +535,7 @@ function fetchQuizMaterial(chapter, n){
   // preferred: the quiz_sutras RPC (returns just the sutras we need)
   return fetch(CFG.url+'/rest/v1/rpc/quiz_sutras',{method:'POST',
       headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},
-      body:JSON.stringify({p_chapter: ch, p_n: (n||6)})})
+      body:JSON.stringify({p_chapter: ch, p_n: (n||3)})})
     .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(function(rows){ if(!Array.isArray(rows)||!rows.length) throw new Error('empty'); return rows; })
     .catch(function(){
@@ -548,7 +548,7 @@ function fetchQuizMaterial(chapter, n){
           var pool=rows.filter(function(x){ return x.content && x.content.length>40; });
           if(ch){ var f=pool.filter(function(x){ return ((x.doc||'')+(x.chapter_title||'')).indexOf(ch)!==-1; }); if(f.length) pool=f; }
           for(var i=pool.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
-          return pool.slice(0,n||6);
+          return pool.slice(0,n||3);
         });
     });
 }
@@ -566,7 +566,7 @@ function buildQuizPrompt(topic, mat){
 function startQuizOn(topic){
   closePage();
   var scope = (topic==='అన్నీ') ? null : topic;
-  fetchQuizMaterial(scope, 6)
+  fetchQuizMaterial(scope, 3)
     .then(function(mat){ send({display:'క్విజ్ — '+topic, prompt:buildQuizPrompt(topic, mat)}); })
     .catch(function(){ send({display:'క్విజ్ — '+topic, prompt:buildQuizPrompt(topic, [])}); });
 }
