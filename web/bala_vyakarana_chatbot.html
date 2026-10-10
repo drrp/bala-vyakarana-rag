@@ -231,7 +231,7 @@ function startChat(){
 
 function bubble(role, html){
   const t=document.createElement('div'); t.className='turn '+role;
-  t.innerHTML='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'నే':'బా')+'</div>'+
+  t.innerHTML='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'ప్రశ్న':'సమాధానం')+'</div>'+
               '<div class="bub">'+html+'</div>';
   return t;
 }
@@ -242,7 +242,7 @@ async function send(){
   thread.appendChild(bubble('user','<p>'+esc(text)+'</p>'));
   HISTORY.push({role:'user', content:text});
   const load=document.createElement('div'); load.className='turn';
-  load.innerHTML='<div class="av a">బా</div><div class="bub"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> thinking…</div></div>';
+  load.innerHTML='<div class="av a">సమాధానం</div><div class="bub"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> thinking…</div></div>';
   thread.appendChild(load); load.scrollIntoView({behavior:'smooth',block:'end'});
   $('send').disabled=true;
   try{
