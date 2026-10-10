@@ -554,17 +554,20 @@ function openRupasadhana(){
   };
   $('rs1').addEventListener('keydown',function(e){ if(e.key==='Enter') $('rsgo').click(); });
 }
-function startQuiz(){ closeSheet();
-  askText('నన్ను బాలవ్యాకరణంపై క్విజ్ చేయి. ఒక్కోసారి ఒకే ఒక ప్రశ్న అడుగు — సూత్రం, ఉదాహరణ, లేదా రూపసాధన ఆధారంగా. నా సమాధానం తర్వాత సూత్రాలతో సరిచూసి, మార్కు ఇచ్చి, తర్వాతి ప్రశ్న అడుగు.'); }
-var SKEY='bala_saved_v1';
-function loadSaved(){ try{ return JSON.parse(localStorage.getItem(SKEY)||'[]'); }catch(e){ return []; } }
-function storeSaved(a){ try{ localStorage.setItem(SKEY, JSON.stringify(a)); }catch(e){} }
-function saveAnswer(q,a,btn){
-  var arr=loadSaved();
-  if(arr.some(function(x){ return x.a===a; })){ if(btn){ btn.classList.add('on'); btn.textContent='\u2605 సేవ్'; } return; }
-  arr.unshift({id:Date.now(), q:q||'', a:a, ts:new Date().toISOString(), note:''});
-  storeSaved(arr);
-  if(btn){ btn.classList.add('on'); btn.textContent='\u2605 సేవ్'; }
+var QUIZ_TOPICS=['సంధి','సమాస','కారక','తద్ధిత','కృదంత','ఆచ్ఛిక','తత్సమ','ప్రకీర్ణ','సంజ్ఞా','క్రియా','అన్నీ'];
+function startQuiz(){
+  openSheet('క్విజ్ — అంశము ఎంచుకోండి','<p class="sh-sub">ఏ పరిచ్ఛేదము నుండి ప్రశ్నలు కావాలో నొక్కండి. ప్రశ్నలు కేవలం ఆ పాఠ్యము (సూత్రాలు, ఘంటాపథము) నుండే అడుగుతుంది — పాఠ్యము వెలుపలి ప్రశ్నలు ఉండవు.</p>'
+    +'<div class="chipwrap" id="qlist"></div>');
+  var el=$('qlist');
+  el.innerHTML = QUIZ_TOPICS.map(function(t){ return '<button data-t="'+esc(t)+'">'+esc(t)+'</button>'; }).join('');
+  el.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ startQuizOn(b.getAttribute('data-t')); }; });
+}
+function startQuizOn(topic){
+  closeSheet();
+  var scope = (topic==='అన్నీ') ? 'బాలవ్యాకరణము, ప్రౌఢవ్యాకరణము, ఘంటాపథము పాఠ్యముల' : (topic+' పరిచ్ఛేదము');
+  askText('క్విజ్ ('+topic+'): నన్ను '+scope+' నుండి మాత్రమే పరీక్షించు. '
+    +'ప్రశ్నలు కేవలం ఇచ్చిన సూత్రాలు/ఘంటాపథము భాగాలలో ఉన్న విషయాల నుండే అడగాలి — పాఠ్యములో లేని సాధారణ ప్రశ్నలు ఎప్పుడూ అడగకూడదు. '
+    +'ఒక్కోసారి ఒకే ఒక ప్రశ్న అడుగు. నా సమాధానము తర్వాత దాన్ని సూత్రాలతో సరిచూసి, మొదట "సరైనది" లేదా "సరికాదు" అని స్పష్టంగా చెప్పి, తర్వాత సరైన సమాధానాన్ని సూత్ర సూచికతో ఇచ్చి, చివరిగా తర్వాతి ప్రశ్న అడుగు.');
 }
 function openSaved(){
   var arr=loadSaved();
