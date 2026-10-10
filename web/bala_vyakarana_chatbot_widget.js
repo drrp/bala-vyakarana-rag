@@ -159,7 +159,7 @@
     fetch(FN, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.key, "apikey": cfg.key },
-      body: JSON.stringify({ messages: history, match_count: 14 }),
+      body: JSON.stringify({ messages: history, match_count: 24 }),
     })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
       .then(function (res) {

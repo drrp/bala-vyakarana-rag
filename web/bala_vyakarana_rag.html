@@ -251,7 +251,7 @@ async function send(){
   try{
     const res=await fetch(CFG.url+FN,{method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+CFG.key,'apikey':CFG.key},
-      body:JSON.stringify({question:text,match_count:14})});
+      body:JSON.stringify({question:text,match_count:24})});
     const data=await res.json().catch(()=>({}));
     if(res.status===401) throw new Error('401 Unauthorized — the key was rejected. Edge Functions only accept the legacy anon JWT key (starts with "eyJ…"), not the newer "sb_publishable_…" key. Get it from Supabase → Project Settings → API Keys → Legacy API keys, and paste that.');
     if(!res.ok||data.error){ throw new Error(data.error? (data.error+(data.detail?(' — '+data.detail):'')) : ('HTTP '+res.status)); }
