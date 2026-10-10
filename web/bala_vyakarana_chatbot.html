@@ -195,6 +195,57 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
 }
+
+/* ---------- tools row ---------- */
+.tools{position:relative;z-index:2;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
+  padding:8px calc(14px + env(safe-area-inset-right)) 8px calc(14px + env(safe-area-inset-left));
+  border-bottom:1px solid var(--line);background:var(--bg)}
+.tools::-webkit-scrollbar{display:none}
+.tool{flex:none;font-family:var(--font-tel);font-size:12px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;
+  transition:transform .14s var(--ease),background .18s,border-color .18s}
+.tool:hover{background:var(--surface-2);border-color:var(--accent)}
+.tool:active{transform:translateY(1px) scale(.98)}
+/* ---------- glossary terms ---------- */
+.bub strong{color:var(--accent);font-weight:600;cursor:pointer;
+  border-bottom:1px dotted color-mix(in srgb,var(--accent) 45%, transparent)}
+.bub strong:hover{background:var(--accent-soft);border-radius:4px}
+/* ---------- answer actions ---------- */
+.bub .ans-actions{display:flex;gap:8px;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line)}
+.bub .ans-actions button{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-faint);background:none;border:1px solid var(--line);border-radius:8px;padding:4px 9px;cursor:pointer}
+.bub .ans-actions button:hover{color:var(--accent);border-color:var(--accent)}
+.bub .ans-actions button.on{color:var(--gold);border-color:var(--gold)}
+/* ---------- sheet ---------- */
+.sheet-bg{position:fixed;inset:0;z-index:20;background:rgba(30,20,10,.42);opacity:0;pointer-events:none;transition:opacity .22s}
+.sheet-bg.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-height:84dvh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--line);border-bottom:none;border-top-left-radius:22px;border-top-right-radius:22px;
+  box-shadow:0 -10px 40px rgba(40,25,10,.22);transform:translateY(103%);transition:transform .28s var(--ease);
+  padding:18px calc(18px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left))}
+.sheet.open{transform:none}
+.sheet h3{margin:0 0 4px;font-family:var(--font-tel-display);font-size:19px}
+.sheet .sh-sub{margin:0 0 12px;color:var(--ink-dim);font-size:13px;font-family:var(--font-tel);line-height:1.6}
+.sheet label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin:12px 0 6px}
+.sheet input,.sheet textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line-strong);
+  background:var(--surface-2);color:var(--ink);font-family:var(--font-tel);font-size:15px;outline:none}
+.sheet input:focus,.sheet textarea:focus{border-color:var(--accent);box-shadow:var(--ring)}
+.sheet .acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.chipwrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chipwrap button{font-family:var(--font-tel);font-size:12.5px;padding:8px 13px;border-radius:14px;
+  border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+.chipwrap button:hover{background:var(--surface-2);border-color:var(--accent)}
+.saved-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;background:var(--surface-2)}
+.saved-item .sq{font-family:var(--font-tel);font-size:13px;color:var(--ink-dim);margin-bottom:6px}
+.saved-item .sa{font-family:var(--font-tel);font-size:14.5px;line-height:1.65;max-height:5.6em;overflow:hidden;white-space:pre-wrap}
+.saved-item .sa.open{max-height:none}
+.saved-item .meta{font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);margin-top:6px}
+.saved-item textarea{font-size:13.5px;margin-top:8px;min-height:44px}
+.saved-item .row2{display:flex;gap:8px;margin-top:8px}
+.saved-item .row2 button{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+  background:none;border:1px solid var(--line);border-radius:8px;padding:4px 9px;color:var(--ink-faint);cursor:pointer}
+.saved-item .row2 button:hover{color:var(--accent);border-color:var(--accent)}
+
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#a8401a">
@@ -219,6 +270,12 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
     <button class="btn" id="clear" style="display:none">New chat</button>
   </div>
 </header>
+<nav class="tools" id="tools" style="display:none">
+  <button class="tool" id="t-quiz">క్విజ్ ప్రారంభించు</button>
+  <button class="tool" id="t-rup">రూపసాధన</button>
+  <button class="tool" id="t-gloss">పదకోశం</button>
+  <button class="tool" id="t-saved">సేవ్ చేసినవి</button>
+</nav>
 <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
 <footer class="foot">
   <span class="tel">Developed by శతావధాని డా. రాంభట్ల పార్వతీశ్వర శర్మ</span>
@@ -274,7 +331,7 @@ const md = s => {
 let CFG = null, HISTORY = [];
 
 function connectScreen(u,k,msg,type){
-  $('settings').style.display='none'; $('clear').style.display='none';
+  $('settings').style.display='none'; $('clear').style.display='none'; $('tools').style.display='none';
   app.innerHTML =
     '<div class="wrap"><div class="card">'+
     '<h2>Connect the chatbot</h2>'+
@@ -299,6 +356,7 @@ function connectScreen(u,k,msg,type){
 function startChat(){
   HISTORY=[];
   $('settings').style.display='none'; $('clear').style.display='inline-block';
+  $('tools').style.display='flex'; $('t-quiz').onclick=startQuiz; $('t-rup').onclick=openRupasadhana; $('t-gloss').onclick=openGlossary; $('t-saved').onclick=openSaved;
   app.innerHTML =
     '<div class="chat"><div class="thread" id="thread">'+
       '<div class="empty" id="welcome">'+
@@ -335,10 +393,21 @@ function startChat(){
   if(window.matchMedia('(pointer:fine)').matches) q.focus();
 }
 
-function bubble(role, html){
+function bubble(role, html, meta){
   const t=document.createElement('div'); t.className='turn '+role;
-  t.innerHTML='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'నే':'బా')+'</div>'+
-              '<div class="bub">'+html+'</div>';
+  let inner='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'నే':'బా')+'</div><div class="bub">'+html;
+  if(role==='assistant' && meta && meta.a){
+    inner+='<div class="ans-actions"><button class="savebtn" type="button">☆ సేవ్</button><button class="copybtn" type="button">⧉ కాపీ</button></div>';
+  }
+  inner+='</div>';
+  t.innerHTML=inner;
+  if(role==='assistant' && meta && meta.a){
+    const sb=t.querySelector('.savebtn');
+    if(sb) sb.addEventListener('click', function(){ saveAnswer(meta.q, meta.a, sb); });
+    const cb=t.querySelector('.copybtn');
+    if(cb) cb.addEventListener('click', function(){ try{ navigator.clipboard.writeText(meta.a); cb.textContent='✓ కాపీ అయింది'; }catch(e){} });
+    wireGlossary(t);
+  }
   return t;
 }
 async function send(){
@@ -361,7 +430,7 @@ async function send(){
     const answer=data.answer||'(no answer)';
     HISTORY.push({role:'assistant', content:answer});
     load.remove();
-    thread.appendChild(bubble('assistant',md(answer)));
+    thread.appendChild(bubble('assistant',md(answer),{q:text,a:answer}));
   }catch(e){
     load.remove();
     thread.appendChild(bubble('assistant','<p style="color:#c0392b">సంబంధం లేదు — ఇంటర్నెట్ కనెక్షన్ తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.</p>'));
@@ -369,6 +438,83 @@ async function send(){
     $('send').disabled=false; if(window.matchMedia('(pointer:fine)').matches) q.focus();
     thread.lastChild.scrollIntoView({behavior:'smooth',block:'end'});
   }
+}
+
+/* ===== study layer ===== */
+function askText(text){ var q=$('q'); if(!q) return; q.value=text; send(); }
+function openSheet(title, inner){
+  var bg=document.getElementById('sheetbg'), sh=document.getElementById('sheet');
+  if(!bg){
+    bg=document.createElement('div'); bg.id='sheetbg'; bg.className='sheet-bg'; document.body.appendChild(bg);
+    sh=document.createElement('div'); sh.id='sheet'; sh.className='sheet'; document.body.appendChild(sh);
+    bg.addEventListener('click', closeSheet);
+  }
+  sh.innerHTML='<h3>'+esc(title)+'</h3>'+inner;
+  requestAnimationFrame(function(){ bg.classList.add('open'); sh.classList.add('open'); });
+}
+function closeSheet(){
+  var bg=document.getElementById('sheetbg'), sh=document.getElementById('sheet');
+  if(bg) bg.classList.remove('open'); if(sh) sh.classList.remove('open');
+}
+function glossTerm(t){ t=String(t||'').trim().replace(/[.,;:!?()\[\]"'\u201C\u201D\u2018\u2019]+$/,''); if(!t) return; closeSheet();
+  askText(t+' అంటే ఏమిటి? సంబంధిత సూత్రాలు, ఉదాహరణలతో క్లుప్తంగా వివరించు.'); }
+function wireGlossary(root){ if(!root) return; root.querySelectorAll('.bub strong').forEach(function(s){
+  s.setAttribute('title','పదకోశం'); s.addEventListener('click', function(){ glossTerm(s.textContent); }); }); }
+var GLOSSARY_TERMS=['సంధి','అచ్','హల్','స్వరము','వ్యంజనము','గుణము','వృద్ధి','యడాగమము','ద్రుతప్రకృతికము','విభక్తి','కారకము','సమాసము','తత్పురుష','కర్మధారయ','ద్వంద్వ','బహువ్రీహి','అవ్యయీభావ','ప్రత్యయము','వచనము','లింగము','పురుషము','సరళాదేశము'];
+function openGlossary(){
+  openSheet('పదకోశం','<p class="sh-sub">పదాన్ని నొక్కండి — సూత్రాల ఆధారంగా అర్థం చెబుతుంది. సమాధానాల్లో <b>బోల్డ్</b> పదాలను నొక్కినా ఇదే జరుగుతుంది.</p>'
+    +'<label>పదం</label><input id="gt" placeholder="ఉదా: యడాగమము">'
+    +'<div class="acts"><button class="btn primary" id="gtgo">వివరించు</button></div>'
+    +'<div class="chipwrap">'+GLOSSARY_TERMS.map(function(t){return '<button data-t="'+t+'">'+t+'</button>';}).join('')+'</div>');
+  $('gtgo').onclick=function(){ var t=$('gt').value.trim(); if(t) glossTerm(t); };
+  $('gt').addEventListener('keydown',function(e){ if(e.key==='Enter'){ var t=$('gt').value.trim(); if(t) glossTerm(t); } });
+  document.querySelectorAll('#sheet .chipwrap button').forEach(function(b){ b.onclick=function(){ glossTerm(b.getAttribute('data-t')); }; });
+}
+function openRupasadhana(){
+  openSheet('రూపసాధన','<p class="sh-sub">ప్రాతిపదిక, ప్రత్యయములు ఇవ్వండి — వర్తించే సూత్రాలతో దశలవారీ సాధన చూపుతుంది.</p>'
+    +'<label>ప్రాతిపదిక (stem)</label><input id="rs1" placeholder="ఉదా: రామ">'
+    +'<label>ప్రత్యయము / విభక్తి</label><input id="rs2" placeholder="ఉదా: సంబోధన ప్రథమా విభక్తి">'
+    +'<div class="acts"><button class="btn primary" id="rsgo">సాధించు</button></div>');
+  $('rsgo').onclick=function(){
+    var a=$('rs1').value.trim(), b=$('rs2').value.trim(); if(!a) return;
+    closeSheet();
+    askText('రూపసాధన: ప్రాతిపదిక "'+a+'"'+(b?('కు "'+b+'" '):'కు ')+'చేర్చి, వర్తించే సూత్రాలు, సంధులు, ఆదేశాలు చూపుతూ దశలవారీగా రూపసాధన చేయి. ప్రతి దశకు సూత్ర సూచిక ఇవ్వు.');
+  };
+  $('rs1').addEventListener('keydown',function(e){ if(e.key==='Enter') $('rsgo').click(); });
+}
+function startQuiz(){ closeSheet();
+  askText('నన్ను బాలవ్యాకరణంపై క్విజ్ చేయి. ఒక్కోసారి ఒకే ఒక ప్రశ్న అడుగు — సూత్రం, ఉదాహరణ, లేదా రూపసాధన ఆధారంగా. నా సమాధానం తర్వాత సూత్రాలతో సరిచూసి, మార్కు ఇచ్చి, తర్వాతి ప్రశ్న అడుగు.'); }
+var SKEY='bala_saved_v1';
+function loadSaved(){ try{ return JSON.parse(localStorage.getItem(SKEY)||'[]'); }catch(e){ return []; } }
+function storeSaved(a){ try{ localStorage.setItem(SKEY, JSON.stringify(a)); }catch(e){} }
+function saveAnswer(q,a,btn){
+  var arr=loadSaved();
+  if(arr.some(function(x){ return x.a===a; })){ if(btn){ btn.classList.add('on'); btn.textContent='\u2605 సేవ్'; } return; }
+  arr.unshift({id:Date.now(), q:q||'', a:a, ts:new Date().toISOString(), note:''});
+  storeSaved(arr);
+  if(btn){ btn.classList.add('on'); btn.textContent='\u2605 సేవ్'; }
+}
+function openSaved(){
+  var arr=loadSaved();
+  var html='<p class="sh-sub">సేవ్ చేసిన సమాధానాలు'+(arr.length?(' ('+arr.length+')'):'')+' — ఈ పరికరంలో నిల్వ ఉంటాయి.</p>';
+  if(!arr.length) html+='<p class="sh-sub">ఇంకా ఏమీ లేదు — ఏదైనా సమాధానం కింద \u2606 సేవ్ నొక్కండి.</p>';
+  arr.forEach(function(x,i){
+    html+='<div class="saved-item" data-i="'+i+'">'
+      +'<div class="sq">'+esc(x.q||'(ప్రశ్న నమోదు కాలేదు)')+'</div>'
+      +'<div class="sa">'+esc(x.a).slice(0,420)+(x.a.length>420?'\u2026':'')+'</div>'
+      +'<div class="meta">'+esc(new Date(x.ts).toLocaleString())+'</div>'
+      +'<textarea placeholder="మీ నోట్\u2026">'+esc(x.note||'')+'</textarea>'
+      +'<div class="row2"><button data-act="expand">పూర్తిగా</button><button data-act="del">తొలగించు</button></div>'
+      +'</div>';
+  });
+  openSheet('సేవ్ చేసినవి', html);
+  document.querySelectorAll('#sheet .saved-item').forEach(function(el){
+    var i=+el.getAttribute('data-i');
+    el.querySelector('textarea').addEventListener('change',function(ev){
+      var a2=loadSaved(); if(a2[i]){ a2[i].note=ev.target.value; storeSaved(a2); } });
+    el.querySelector('[data-act="expand"]').onclick=function(){ el.querySelector('.sa').classList.toggle('open'); };
+    el.querySelector('[data-act="del"]').onclick=function(){ var a2=loadSaved(); a2.splice(i,1); storeSaved(a2); openSaved(); };
+  });
 }
 
 (function(){
