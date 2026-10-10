@@ -237,9 +237,23 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .chipwrap button:hover{background:var(--surface-2);border-color:var(--accent)}
 
 
-.rup-list{margin-top:12px;max-height:44dvh;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
-.rup-list button{text-align:left;font-family:var(--font-tel);font-size:13.5px;padding:8px 11px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
-.rup-list button:hover{background:var(--surface-2);border-color:var(--accent)}
+.rup-list{margin-top:12px;max-height:46dvh;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.rup-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;overflow-x:auto}
+.rup-row:hover{background:var(--surface-2);border-color:var(--accent)}
+.flow{display:flex;align-items:center;flex-wrap:nowrap;font-family:var(--font-tel)}
+.fnode{border:1.5px solid var(--line-strong);border-radius:11px;padding:6px 12px;background:var(--surface-2);font-size:14px;white-space:nowrap;line-height:1.3}
+.fnode.end{background:var(--accent-soft);border-color:transparent;font-weight:600;color:var(--accent)}
+.fedge{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:54px;color:var(--gold)}
+.fedge .lbl{font-family:var(--font-mono);font-size:10px;white-space:nowrap;margin-bottom:4px;line-height:1}
+.fedge .bar{position:relative;height:2px;width:100%;background:currentColor;border-radius:2px}
+.fedge .bar::after{content:"";position:absolute;right:-1px;top:-3.5px;border-left:8px solid currentColor;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent}
+.flowbig{display:flex;align-items:center;justify-content:center;gap:0;padding:18px 6px 6px;flex-wrap:nowrap;overflow-x:auto}
+.flowbig .fnode{font-size:17px;padding:10px 16px;box-shadow:var(--shadow-1)}
+.fstep{display:flex;flex-direction:column;align-items:center;gap:6px}
+.flabel{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+.flowbig .fedge{min-width:78px}
+.flowbig .fedge .lbl{font-size:12px}
+.flowbig .fedge .bar{height:2.5px}
 .gloss-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;max-height:50dvh;overflow-y:auto;align-content:flex-start}
 .gloss-list button{font-family:var(--font-tel);font-size:12px;padding:5px 10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
 .gloss-list button:hover{background:var(--surface-2);border-color:var(--accent)}
@@ -487,8 +501,27 @@ function openGlossary(){
   $('gt').addEventListener('input',function(){ render($('gt').value); });
   $('gt').addEventListener('keydown',function(e){ if(e.key==='Enter'){ var q=$('gt').value.trim(); if(q) glossTerm(q); } });
 }
+function flowHTML(x, big){
+  var a = big ? '<div class="fstep"><div class="flabel">ప్రాతిపదిక</div>' : '';
+  var b = big ? '</div>' : '';
+  var c = big ? '<div class="fstep"><div class="flabel">రూపము</div>' : '';
+  var d = big ? '</div>' : '';
+  return '<div class="'+(big?'flowbig':'flow')+'">'
+    + a + '<div class="fnode start">'+esc(x[0])+'</div>' + b
+    + '<div class="fedge"><span class="lbl">+ '+esc(x[1])+'</span><span class="bar"></span></div>'
+    + c + '<div class="fnode end">'+esc(x[2])+'</div>' + d
+    + '</div>';
+}
+function openRupaDetail(i){
+  var x=RUPAS[i];
+  openSheet('రూపసాధన — దశలు', flowHTML(x,true)
+    + '<div class="acts"><button class="btn primary" id="rdask">సూత్రాలతో వివరించు</button></div>'
+    + '<p class="sh-sub" style="margin-top:12px">ప్రాతిపదికకు ప్రత్యయము చేరి, సంధి/ఆదేశ/లోపముల చేత రూపము సిద్ధించును. పై బొత్తాము నొక్కితే ప్రతి దశను సూత్రములతో వివరిస్తుంది.</p>');
+  $('rdask').onclick=function(){ closeSheet();
+    askText('రూపసాధన: '+x[0]+' + '+x[1]+' = '+x[2]+' — ప్రాతిపదిక నుండి రూపము వరకు ప్రతి దశను, వర్తించే సూత్రములతో వివరించు.'); };
+}
 function openRupasadhana(){
-  openSheet('రూపసాధన ('+RUPAS.length+')','<p class="sh-sub">పరిచ్ఛేదాలలో చెప్పిన రూపసాధనలు — పదం/ప్రత్యయం వెతకండి. లేదా క్రింద ప్రాతిపదిక+ప్రత్యయము ఇచ్చి అడగండి.</p>'
+  openSheet('రూపసాధన ('+RUPAS.length+')','<p class="sh-sub">పరిచ్ఛేదాలలో చెప్పిన రూపసాధనలు — ప్రాతిపదిక → ప్రత్యయము → రూపము. పదం/ప్రత్యయం వెతకండి; ఏదైనా నొక్కితే దశలవారీగా చూపుతుంది.</p>'
     +'<label>ప్రాతిపదిక (stem)</label><input id="rs1" placeholder="ఉదా: పండు">'
     +'<label>ప్రత్యయము / విభక్తి</label><input id="rs2" placeholder="ఉదా: ట">'
     +'<div class="acts"><button class="btn primary" id="rsgo">సాధించు</button></div>'
@@ -497,11 +530,10 @@ function openRupasadhana(){
   var render=function(q){
     q=(q||'').trim();
     var list = q ? RUPAS.filter(function(x){ return (x[0]+x[1]+x[2]).indexOf(q)!==-1; }) : RUPAS;
-    var cap=list.slice(0,300);
-    $('rlist').innerHTML = cap.map(function(x,i){ return '<button data-i="'+RUPAS.indexOf(x)+'">'+esc(x[0])+' + '+esc(x[1])+' = '+esc(x[2])+'</button>'; }).join('')
+    var cap=list.slice(0,200);
+    $('rlist').innerHTML = cap.map(function(x){ return '<div class="rup-row" data-i="'+RUPAS.indexOf(x)+'">'+flowHTML(x,false)+'</div>'; }).join('')
       + (list.length>cap.length? '<div class="gloss-more">మరిన్ని — మొత్తం '+list.length+'. మరింత రాయండి.</div>':'');
-    $('rlist').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ var x=RUPAS[+b.getAttribute('data-i')]; closeSheet();
-      askText('రూపసాధన: '+x[0]+' + '+x[1]+' = '+x[2]+' — వర్తించే సూత్రాలు, సంధులు, ఆదేశాలు చూపుతూ దశలవారీగా వివరించు.'); }; });
+    $('rlist').querySelectorAll('.rup-row').forEach(function(b){ b.onclick=function(){ openRupaDetail(+b.getAttribute('data-i')); }; });
   };
   render('');
   $('rq').addEventListener('input',function(){ render($('rq').value); });
