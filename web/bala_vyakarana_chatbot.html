@@ -217,13 +217,17 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   .page .sh-sub{font-size:15px}
 }
 .gt-pages button{min-width:44px}
-.gt-nav{margin:0 0 12px}
-.gt-head{font-family:var(--font-tel-display);font-weight:600;color:var(--accent);margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
-.gt-body{font-family:var(--font-tel);font-size:16.5px;line-height:1.95;color:var(--ink)}
-.gt-b{margin:0 0 12px;white-space:pre-wrap}
-.gt-h{font-family:var(--font-tel-display);font-weight:600;color:var(--accent);margin:18px 0 8px}
-.gt-sutra{color:#1d4ed8;font-weight:400;background:var(--surface-2);border-radius:10px;padding:12px 15px}
-.gt-vritti,.gt-vyakhya,.gt-visesham{background:var(--surface-2);border-radius:10px;padding:12px 15px}
+.gt-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 16px}
+.gt-tools{display:flex;align-items:center;gap:8px}
+.gt-tools .pback{padding:3px 9px;font-size:13px}
+.gt-count{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-dim)}
+.gt-head{font-family:var(--font-tel-display);font-weight:600;font-size:15px;color:var(--accent);text-align:center;letter-spacing:.02em;margin:0 0 22px;padding-bottom:11px;border-bottom:1px solid var(--line)}
+.gt-body{font-family:var(--font-tel);font-size:17.5px;line-height:2.05;color:var(--ink);text-align:justify;text-justify:inter-word;max-width:42rem;margin:0 auto}
+.gt-b{margin:0 0 5px;text-indent:1.6em;white-space:pre-wrap}
+.gt-h{font-family:var(--font-tel-display);font-weight:600;font-size:17px;color:var(--accent);text-align:center;text-indent:0;margin:28px 0 13px;white-space:pre-wrap}
+.gt-quote{text-indent:0;margin:18px 0;padding:15px 19px;background:var(--surface-2);border-left:3px solid var(--gold);border-radius:0 10px 10px 0}
+.gt-sutra{color:#1d4ed8;font-weight:400;text-align:center;border-left-color:#1d4ed8}
+.gt-pager{display:flex;justify-content:space-between;gap:10px;margin:28px 0 8px;padding-top:17px;border-top:1px solid var(--line)}
 @media (prefers-color-scheme: dark){.gt-sutra{color:#8ab4ff}}
 .page-body{flex:1;overflow-y:auto;padding:16px calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
 .ansdoc{font-family:var(--font-tel);font-size:16px;line-height:1.8}
@@ -532,21 +536,41 @@ function gtBook(i){
 }
 function gtPage(i, n){
   gtLoad(i).then(function(d){
-    var pg=(d.pages||[]).filter(function(p){ return p[0]===n; })[0];
-    if(!pg){ openPage(GT_BOOKS[i].t,'<p class="sh-sub">పుట కనబడలేదు.</p>'); return; }
-    var html='<div class="gt-nav"><button class="pback" id="gt-back">← పుటలు</button></div>'
-      + '<div class="gt-head">'+esc(d.title||GT_BOOKS[i].t)+' · పుట '+n+'</div>'
-      + '<div class="gt-body">' + pg[1].map(function(b){
-          var t=b[0], x=String(b[1]||'');
-          if(t==='sutra'||t==='vritti'||t==='vyakhya'||t==='visesham') return '<div class="gt-b gt-'+t+'">'+esc(x).replace(/\n/g,'<br>')+'</div>';
-          if(t==='possible_heading') return '<div class="gt-h">'+esc(x).replace(/\n/g,'<br>')+'</div>';
-          return '<div class="gt-b">'+esc(x).replace(/\n/g,'<br>')+'</div>';
-        }).join('') + '</div>';
+    var pages=d.pages||[];
+    var idx=-1; for(var k=0;k<pages.length;k++){ if(pages[k][0]===n){ idx=k; break; } }
+    if(idx<0){ openPage(GT_BOOKS[i].t,'<p class="sh-sub">పుట కనబడలేదు.</p>'); return; }
+    var pg=pages[idx];
+    var prev = idx>0 ? pages[idx-1][0] : null;
+    var next = idx<pages.length-1 ? pages[idx+1][0] : null;
+    var body=pg[1].map(function(b){
+      var t=b[0], x=String(b[1]||''), cls='gt-b';
+      if(t==='possible_heading') cls='gt-h';
+      else if(t==='sutra') cls='gt-b gt-quote gt-sutra';
+      else if(t==='vritti'||t==='vyakhya'||t==='visesham') cls='gt-b gt-quote';
+      return '<div class="'+cls+'">'+esc(x).replace(/\n/g,'<br>')+'</div>';
+    }).join('');
+    var html=
+      '<div class="gt-bar"><button class="pback" id="gt-back">← పుటలు</button>'
+      + '<span class="gt-tools">'
+      + (prev!==null ? '<button class="pback" data-go="'+prev+'">‹</button>' : '')
+      + '<span class="gt-count">పుట '+n+' / '+pages.length+'</span>'
+      + (next!==null ? '<button class="pback" data-go="'+next+'">›</button>' : '')
+      + '</span></div>'
+      + '<div class="gt-head">'+esc(d.title||GT_BOOKS[i].t)+'</div>'
+      + '<div class="gt-body">'+body+'</div>'
+      + '<div class="gt-pager">'
+      + (prev!==null ? '<button class="pback" data-go="'+prev+'">← మునుపటి పుట</button>' : '<span></span>')
+      + (next!==null ? '<button class="pback" data-go="'+next+'">తర్వాతి పుట →</button>' : '<span></span>')
+      + '</div>';
     openPage(GT_BOOKS[i].t+' — పుట '+n, html, function(){
       var bb=$('gt-back'); if(bb) bb.onclick=function(){ gtBook(i); };
+      document.querySelectorAll('#page-body [data-go]').forEach(function(x){
+        x.onclick=function(){ gtPage(i, +x.getAttribute('data-go')); };
+      });
     });
   });
 }
+
 function pageSaved(){
   var arr=loadSaved();
   var html='<p class="sh-sub">సేవ్ చేసిన సమాధానాలు'+(arr.length?(' ('+arr.length+')'):'')+' — ఈ పరికరంలో నిల్వ.</p>';
