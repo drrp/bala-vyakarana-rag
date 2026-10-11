@@ -145,6 +145,10 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .bub .sutra::before,.bub .sutra::after{content:"\0965";position:absolute;left:50%;transform:translateX(-50%);color:var(--gold);font-size:12px;line-height:1;background:var(--surface);padding:0 8px}
 .bub .sutra::before{top:-8px}
 .bub .sutra::after{bottom:-8px}
+.bub .sutraline{margin:20px 0;padding:16px 20px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+.bub .sutraline .sutra-txt{font-family:var(--font-tel);font-size:19px;font-weight:400;color:#1d4ed8;line-height:1.9}
+.bub .sutraline .sutra-ref{display:block;margin-top:7px;text-align:right;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.02em;color:var(--ink-dim)}
+@media (prefers-color-scheme: dark){.bub .sutraline .sutra-txt{color:#8ab4ff}}
 .bub ul,.bub ol{margin:8px 0 12px;padding-left:24px}
 .bub li{margin:7px 0;font-family:var(--font-tel);font-size:17.5px;line-height:1.85}
 .bub li>ul,.bub li>ol{margin:4px 0;padding-left:20px}
@@ -337,6 +341,12 @@ const md = s => {
     if ((m = line.match(/^(\s*)\d+[.)]\s+(.*)$/))) { item('ol', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
     if ((m = line.match(/^(#{1,6})\s+(.*)$/))) { closeAll(); out.push('<div class="hd h'+Math.min(m[1].length,3)+'">'+inline(m[2])+'</div>'); return; }
     if ((m = line.match(/^\s*>\s?(.*)$/))) { closeAll(); out.push('<div class="sutra">'+inline(m[1])+'</div>'); return; }
+    // A sutra stated on its own line with its reference -> blue text, reference right-aligned below.
+    if (!/^\s*([-*•]|\d+[.)]|#)/.test(line) && (m = line.match(/^(.*?)\s*\(((?:బా|ప్రౌ|సాహి|సాహిత్య)[^)]*)\)\s*$/))) {
+      closeAll();
+      out.push('<div class="sutraline"><div class="sutra-txt">'+inline(m[1])+'</div><div class="sutra-ref">('+esc(m[2])+')</div></div>');
+      return;
+    }
     if (!line.trim()) return;
     closeAll(); out.push('<p>'+inline(line)+'</p>');
   });
