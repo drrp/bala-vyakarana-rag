@@ -274,6 +274,24 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   background:var(--surface-2);color:var(--ink);font-family:var(--font-tel);font-size:15px;outline:none}
 .sheet input:focus,.sheet textarea:focus{border-color:var(--accent);box-shadow:var(--ring)}
 .sheet .acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.qz-card{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-top:8px}
+.qz-meta{font-family:var(--font-mono);font-size:11px;color:var(--ink-dim);margin-bottom:10px}
+.qz-q{font-family:var(--font-tel);font-size:17px;line-height:1.85;color:var(--ink);margin-bottom:14px}
+.qz-opts{display:flex;flex-direction:column;gap:9px}
+.qz-opt{font-family:var(--font-tel);font-size:15.5px;text-align:left;padding:12px 15px;border-radius:11px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);cursor:pointer;line-height:1.6}
+.qz-opt:hover:not(:disabled){border-color:var(--accent)}
+.qz-opt:disabled{cursor:default}
+.qz-opt.right{background:#e6f4e6;border-color:#3f7d3f;color:#20521f}
+.qz-opt.wrong{background:#fbe9e7;border-color:#b4441f;color:#8c2f13}
+:root[data-theme="dark"] .qz-opt.right{background:#1e3320;border-color:#5f9c5f;color:#c6e6c6}
+:root[data-theme="dark"] .qz-opt.wrong{background:#3a1f16;border-color:#c9662f;color:#f2bd9f}
+.qz-fb{margin-top:14px}
+.qz-verdict{font-family:var(--font-tel);font-size:15px;font-weight:600;margin-bottom:6px}
+.qz-verdict.ok{color:#3f7d3f}
+.qz-verdict.no{color:#b4441f}
+.qz-explain{font-family:var(--font-tel);font-size:15px;color:var(--ink);line-height:1.7;margin-bottom:4px}
+.qz-ref{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-dim);margin-bottom:12px}
+.qz-score{font-family:var(--font-tel);font-size:19px;text-align:center;padding:26px 12px;color:var(--accent);line-height:1.9}
 .sb-search{margin:4px 0 16px}
 .sb-srow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .sb-search input{flex:1;font-family:var(--font-tel);font-size:14.5px;padding:9px 13px;border-radius:11px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink)}
@@ -334,6 +352,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <button class="tool" data-page="chat">సంభాషణ</button>
   <button class="tool" data-page="saved">సేవ్</button>
   <button class="tool" data-page="text">గ్రంథము</button>
+  <button class="tool" data-page="quiz">క్విజ్</button>
 </nav>
 <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
 <div id="page" class="page" style="display:none"><div class="page-hd"><button class="pback" id="page-close">← సంభాషణ</button><h2 id="page-title"></h2></div><div class="page-body" id="page-body"></div></div>
@@ -526,6 +545,7 @@ function closePage(){ $('page').style.display='none'; }
 function pageFor(name){
   if(name==='saved') return pageSaved();
   if(name==='text') return pageText();
+  if(name==='quiz') return pageQuiz();
   closePage();
 }
 
@@ -685,6 +705,133 @@ function sbChapter(id, page){
       });
     });
   });
+}
+/* ===== quiz (MCQ over the book) ===== */
+var QZ={qs:[],i:0,score:0,done:false};
+var QZ_ABBR={
+ '\u0c2a\u0c40\u0c20\u0c3f\u0c15':'పీఠిక',
+ 'సంజ్ఞా పరిచ్ఛేదము':'సంజ్ఞా.పరి. సూ.',
+ 'సంధి పరిచ్ఛేదము':'సంధి.పరి. సూ.',
+ 'తత్సమ పరిచ్ఛేదము':'తత్స.పరి. సూ.',
+ 'ఆచ్ఛిక పరిచ్ఛేదము':'ఆచ్ఛి.పరి. సూ.',
+ 'కారక పరిచ్ఛేదము':'కార.పరి. సూ.',
+ 'సమాస పరిచ్ఛేదము':'సమా.పరి. సూ.',
+ 'తద్ధిత పరిచ్ఛేదము':'తద్ధి.పరి. సూ.',
+ 'క్రియా పరిచ్ఛేదము':'క్రియా.పరి. సూ.',
+ 'కృదంత పరిచ్ఛేదము':'కృదం.పరి. సూ.',
+ 'ప్రకీర్ణ పరిచ్ఛేదము':'ప్రకీ.పరి. సూ.'
+};
+function qzShuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function qzPick(pool, k, not){ var p=pool.filter(function(x){ return x!==not; }); qzShuffle(p); var out=[]; for(var i=0;i<p.length && out.length<k;i++){ if(out.indexOf(p[i])===-1) out.push(p[i]); } return out; }
+function qzTitle(id){ var c=SB.p.filter(function(x){ return x.id===id; })[0]; return c?(c.title_te||c.id):''; }
+function qzRef(it){
+  var t=qzTitle(it.pariccheda_id), a=QZ_ABBR[t]||t, n=(it.sutra_number!=null)?it.sutra_number:'';
+  return ('బా.వ్యా. '+a+(n!==''?' '+n:'')).replace(/\s+/g,' ').trim();
+}
+/* rows of a 2+ column example table (header and formula rows excluded) */
+function qzTableRows(ex){
+  var out=[];
+  if(!Array.isArray(ex)) return out;
+  ex.forEach(function(grp){
+    if(!Array.isArray(grp)) return;
+    var rws=Array.isArray(grp[0])?grp:[grp];
+    rws.forEach(function(r){
+      if(!Array.isArray(r)) return;
+      var c=r.map(tc), f=c.filter(function(x){ return x!==''; });
+      if(f.length<2) return;
+      if(c.some(function(x){ return x==='+'||x==='='; })) return;
+      if(/సంస్కృతము|ప్రాకృతము/.test(c[0])) return;
+      out.push(c);
+    });
+  });
+  return out;
+}
+function qzBuild(fid, n){
+  var items=SB.i.filter(function(x){ return x.type==='sutra' && (!fid || x.pariccheda_id===fid) && tc(x.text); });
+  var allSutras=SB.i.filter(function(x){ return x.type==='sutra' && tc(x.text); }).map(function(x){ return tc(x.text); });
+  var allCh=SB.p.map(function(c){ return c.title_te||c.id; });
+  var pairs=[];
+  items.forEach(function(it){ qzTableRows(it.examples).forEach(function(c){ if(c[0]&&c[1]) pairs.push({q:c[0], a:c[1], ref:it}); }); });
+  var allForms=pairs.map(function(p){ return p.a; });
+  var qs=[], capA=Math.max(1,Math.round(n*0.4)), capB=Math.max(1,Math.round(n*0.8));
+
+  qzShuffle(pairs.slice()).forEach(function(p){
+    if(qs.length>=capA) return;
+    var wrong=qzPick(allForms,3,p.a); if(wrong.length<3) return;
+    qs.push({kind:'రూప నిర్ణయము', q:'‘'+p.q+'’ అను సంస్కృత పదమునకు తెలుగు రూపము ఏది?',
+      opts:qzShuffle([p.a].concat(wrong)), ans:p.a, ref:p.ref});
+  });
+  qzShuffle(items.slice()).forEach(function(it){
+    if(qs.length>=capB) return;
+    var w=tc(it.text).split(/\s+/); if(w.length<4) return;
+    var cut=Math.min(3, w.length-2);
+    var head=w.slice(0,w.length-cut).join(' '), tail=w.slice(w.length-cut).join(' ');
+    var others=allSutras.filter(function(x){ return x!==tc(it.text); }).map(function(x){ var ws=x.split(/\s+/); return ws.slice(Math.max(0,ws.length-cut)).join(' '); });
+    var wrong=qzPick(others,3,tail); if(wrong.length<3) return;
+    qs.push({kind:'సూత్ర పూర్తి', q:'ఈ సూత్రమును పూర్తి చేయండి:\n‘'+head+' ____’',
+      opts:qzShuffle([tail].concat(wrong)), ans:tail, ref:it});
+  });
+  qzShuffle(items.slice()).forEach(function(it){
+    if(qs.length>=n) return;
+    var correct=qzTitle(it.pariccheda_id), wrong=qzPick(allCh,3,correct);
+    if(wrong.length<3) return;
+    qs.push({kind:'పరిచ్ఛేద నిర్ణయము', q:'‘'+tc(it.text)+'’ అను సూత్రము ఏ పరిచ్ఛేదమునకు చెందినది?',
+      opts:qzShuffle([correct].concat(wrong)), ans:correct, ref:it});
+  });
+  return qzShuffle(qs).slice(0,n);
+}
+function pageQuiz(){
+  openPage('క్విజ్','<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> తెస్తోంది…</div>');
+  sbLoad().then(function(){
+    var opts='<option value="">అన్ని పరిచ్ఛేదములు</option>'+SB.p.map(function(c){ return '<option value="'+esc(c.id)+'">'+esc(c.title_te||c.id)+'</option>'; }).join('');
+    var html='<div class="sb-search">'
+      +'<div class="sb-srow"><select id="qz-ch">'+opts+'</select><select id="qz-n">'
+      +'<option value="10">10 ప్రశ్నలు</option><option value="15">15 ప్రశ్నలు</option><option value="20">20 ప్రశ్నలు</option></select>'
+      +'<button id="qz-go">ప్రారంభించు</button></div></div>'
+      +'<p class="sh-sub">గ్రంథము నుండి స్వయంగా తయారగు ప్రశ్నలు — సూత్రములు, ఉదాహరణలు, పరిచ్ఛేదములు. సమాధానము నొక్కగానే సరి/తప్పు తెలియును.</p>'
+      +'<div id="qz-body"></div>';
+    openPage('క్విజ్', html, function(){
+      $('qz-go').onclick=function(){ qzStart($('qz-ch').value, Number($('qz-n').value)||10); };
+    });
+  }).catch(function(e){ openPage('క్విజ్','<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
+}
+function qzStart(fid, n){
+  var qs=qzBuild(fid, n), b=$('qz-body');
+  if(!qs.length){ b.innerHTML='<p class="sh-sub">ఈ ఎంపికకు ప్రశ్నలు సిద్ధం కాలేదు — వేరొక పరిచ్ఛేదము ప్రయత్నించండి.</p>'; return; }
+  QZ={qs:qs, i:0, score:0, done:false};
+  qzRender();
+}
+function qzRender(){
+  var b=$('qz-body'); if(!b) return;
+  if(QZ.i>=QZ.qs.length){
+    var pc=Math.round(QZ.score*100/QZ.qs.length);
+    b.innerHTML='<div class="qz-score">మీ స్కోరు: <b>'+QZ.score+' / '+QZ.qs.length+'</b> ('+pc+'%)<br>'
+      +'<button class="btn primary" id="qz-again">మళ్లీ ప్రయత్నించు</button></div>';
+    $('qz-again').onclick=function(){ pageQuiz(); };
+    return;
+  }
+  var q=QZ.qs[QZ.i];
+  b.innerHTML='<div class="qz-card"><div class="qz-meta">ప్రశ్న '+(QZ.i+1)+' / '+QZ.qs.length+' · '+esc(q.kind)+' · స్కోరు '+QZ.score+'</div>'
+    +'<div class="qz-q">'+esc(q.q).replace(/\n/g,'<br>')+'</div>'
+    +'<div class="qz-opts">'+q.opts.map(function(o,i){ return '<button class="qz-opt" data-i="'+i+'">'+esc(o)+'</button>'; }).join('')+'</div>'
+    +'<div class="qz-fb" id="qz-fb"></div></div>';
+  b.querySelectorAll('.qz-opt').forEach(function(btn){ btn.onclick=function(){ qzAnswer(btn, Number(btn.getAttribute('data-i'))); }; });
+}
+function qzAnswer(btn, idx){
+  if(QZ.done) return;
+  var q=QZ.qs[QZ.i], chosen=q.opts[idx], ok=(chosen===q.ans);
+  QZ.done=true; if(ok) QZ.score++;
+  document.querySelectorAll('#qz-body .qz-opt').forEach(function(b2){
+    b2.disabled=true;
+    if(b2.textContent===q.ans) b2.classList.add('right');
+    else if(b2===btn) b2.classList.add('wrong');
+  });
+  var fb=$('qz-fb');
+  fb.innerHTML='<div class="qz-verdict '+(ok?'ok':'no')+'">'+(ok?'సరియైనది ✓':'సరికాదు ✗')+'</div>'
+    +'<div class="qz-explain">సరియైన సమాధానము: <b>'+esc(q.ans)+'</b></div>'
+    +'<div class="qz-ref">'+esc(qzRef(q.ref))+'</div>'
+    +'<button class="btn primary" id="qz-next">'+(QZ.i+1>=QZ.qs.length?'ఫలితము చూడు':'తర్వాత ప్రశ్న →')+'</button>';
+  $('qz-next').onclick=function(){ QZ.i++; QZ.done=false; qzRender(); };
 }
 function pageSaved(){
   var arr=loadSaved();
