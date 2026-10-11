@@ -340,13 +340,14 @@ const md = s => {
     if ((m = line.match(/^(\s*)[-*•]\s+(.*)$/))) { item('ul', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
     if ((m = line.match(/^(\s*)\d+[.)]\s+(.*)$/))) { item('ol', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
     if ((m = line.match(/^(#{1,6})\s+(.*)$/))) { closeAll(); out.push('<div class="hd h'+Math.min(m[1].length,3)+'">'+inline(m[2])+'</div>'); return; }
-    if ((m = line.match(/^\s*>\s?(.*)$/))) { closeAll(); out.push('<div class="sutra">'+inline(m[1])+'</div>'); return; }
-    // A sutra stated on its own line with its reference -> blue text, reference right-aligned below.
-    if (!/^\s*([-*•]|\d+[.)]|#)/.test(line) && (m = line.match(/^(.*?)\s*\(((?:బా|ప్రౌ|సాహి|సాహిత్య)[^)]*)\)\s*$/))) {
+    // A sutra on its own line with its reference -> blue text, reference right-aligned below.
+    // Runs BEFORE the plain-quote rule, and accepts a leading '>' so a quoted sutra gets the same look.
+    if (!/^\s*([-*•]|\d+[.)]|#)/.test(line) && (m = line.match(/^\s*>?\s*(.*?)\s*\(((?:బా|ప్రౌ|సాహి|సాహిత్య)[^)]*)\)\s*$/))) {
       closeAll();
       out.push('<div class="sutraline"><div class="sutra-txt">'+inline(m[1])+'</div><div class="sutra-ref">('+esc(m[2])+')</div></div>');
       return;
     }
+    if ((m = line.match(/^\s*>\s?(.*)$/))) { closeAll(); out.push('<div class="sutra">'+inline(m[1])+'</div>'); return; }
     if (!line.trim()) return;
     closeAll(); out.push('<p>'+inline(line)+'</p>');
   });
