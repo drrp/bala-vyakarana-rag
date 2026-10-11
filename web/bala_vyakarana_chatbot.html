@@ -233,10 +233,14 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .sb-sutra .sb-txt{font-family:var(--font-tel);font-size:17.5px;color:#1d4ed8;line-height:1.95}
 .sb-num{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);vertical-align:super;margin-left:6px}
 .sb-exs{margin:6px 0 10px 14px;padding-left:12px;border-left:1px dashed var(--line)}
-.sb-tbl{width:100%;border-collapse:collapse;font-family:var(--font-tel);font-size:15.5px}
-.sb-tbl td{padding:2px 4px;vertical-align:top;line-height:1.7}
-.sb-tbl td.eq{width:1.2em;text-align:center;color:var(--ink-dim)}
-.sb-tbl td.rhs{color:var(--accent)}
+.sb-tblwrap{overflow-x:auto;margin:8px 0 10px;border:1px solid var(--line);border-radius:10px}
+.sb-tbl{width:100%;border-collapse:collapse;font-family:var(--font-tel);font-size:15px;background:var(--surface)}
+.sb-tbl th{font-family:var(--font-tel-display);font-weight:600;font-size:13px;color:var(--accent);text-align:left;padding:7px 10px;border-bottom:1.5px solid var(--line-strong);background:var(--surface-2);white-space:nowrap}
+.sb-tbl td{padding:5px 10px;vertical-align:top;line-height:1.75;border-bottom:1px solid var(--line)}
+.sb-tbl tbody tr:last-child td{border-bottom:none}
+.sb-tbl tbody tr:nth-child(even){background:var(--surface-2)}
+.sb-tbl td:first-child{color:var(--ink);font-weight:500}
+.sb-tbl td:not(:first-child){color:var(--accent)}
 .sb-ex{font-family:var(--font-tel);font-size:16px;line-height:1.85;text-indent:0;margin:3px 0}
 .sb-exnote{font-family:var(--font-tel);font-size:15.5px;color:var(--ink-dim);line-height:1.8;margin:3px 0}
 @media (prefers-color-scheme: dark){.sb-sutra .sb-txt{color:#8ab4ff}}
@@ -271,6 +275,19 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   background:var(--surface-2);color:var(--ink);font-family:var(--font-tel);font-size:15px;outline:none}
 .sheet input:focus,.sheet textarea:focus{border-color:var(--accent);box-shadow:var(--ring)}
 .sheet .acts{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.sb-search{margin:4px 0 16px}
+.sb-srow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.sb-search input{flex:1;font-family:var(--font-tel);font-size:14.5px;padding:9px 13px;border-radius:11px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink)}
+.sb-search input:focus{outline:none;border-color:var(--accent)}
+.sb-search select{font-family:var(--font-tel);font-size:13px;padding:8px 11px;border-radius:11px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);flex:1;max-width:22rem}
+.sb-search button{font-family:var(--font-tel);font-size:13.5px;padding:9px 16px;border-radius:11px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+.sb-hint{font-family:var(--font-tel);font-size:12px;color:var(--ink-dim);white-space:nowrap}
+.sb-hits{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.sb-hit{padding:10px 13px;border:1px solid var(--line);border-radius:11px;background:var(--surface);cursor:pointer}
+.sb-hit:hover{border-color:var(--accent);background:var(--surface-2)}
+.sb-hitmeta{font-family:var(--font-tel);font-size:11.5px;color:var(--ink-dim);margin-bottom:3px}
+.sb-hittxt{font-family:var(--font-tel);font-size:15px;line-height:1.7;color:var(--ink)}
+.sb-hittxt mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 2px}
 .chipwrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .chipwrap button{font-family:var(--font-tel);font-size:12.5px;padding:8px 13px;border-radius:14px;
   border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
@@ -542,40 +559,96 @@ function sbLoad(){
   ]).then(function(r){ SB.p=r[0]||[]; SB.i=r[1]||[]; return SB; });
 }
 function pageText(){ sbBook(); }
+function normTe(s){ return String(s==null?'':s).replace(/[ఁం\u200c\u200d]/g,'').replace(/\s+/g,' ').trim(); }
 function sbBook(){
   openPage(GT_BOOK.t,'<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> తెస్తోంది…</div>');
   sbLoad().then(function(){
-    var html='<p class="sh-sub">బాలవ్యాకరణము — పరిచ్ఛేదముల వారీగా. ఏ పరిచ్ఛేదము చూడాలో నొక్కండి.</p><div class="chipwrap" id="sb-ch">'
+    var opts='<option value="">అన్ని పరిచ్ఛేదములు</option>'+SB.p.map(function(c){ return '<option value="'+esc(c.id)+'">'+esc(c.title_te||c.id)+'</option>'; }).join('');
+    var html='<div class="sb-search">'
+      + '<div class="sb-srow"><input id="sb-q" type="search" placeholder="పుస్తకంలో పదము, సూత్రము లేదా వాక్యము వెతకండి…" autocomplete="off"><button id="sb-go">వెతకండి</button></div>'
+      + '<div class="sb-srow"><select id="sb-f">'+opts+'</select><span class="sb-hint" id="sb-hint"></span></div>'
+      + '</div>'
+      + '<div id="sb-res"></div>'
+      + '<p class="sh-sub">లేదా పరిచ్ఛేదము ఎంచుకోండి:</p><div class="chipwrap" id="sb-ch">'
       + SB.p.map(function(c){ var n=SB.i.filter(function(x){return x.pariccheda_id===c.id;}).length;
           return '<button data-id="'+esc(c.id)+'">'+esc(c.title_te||c.id)+' ('+n+')</button>'; }).join('') + '</div>';
     openPage(GT_BOOK.t, html, function(){
       document.querySelectorAll('#sb-ch button').forEach(function(b){ b.onclick=function(){ sbChapter(b.getAttribute('data-id'), 1); }; });
+      var q=$('sb-q'), f=$('sb-f'), go=$('sb-go'), tm=null;
+      var run=function(){ sbSearch(q?q.value:'', f?f.value:''); };
+      if(q){ q.addEventListener('input', function(){ clearTimeout(tm); tm=setTimeout(run,200); });
+             q.addEventListener('keydown', function(e){ if(e.key==='Enter'){ clearTimeout(tm); run(); } }); }
+      if(go) go.onclick=run;
+      if(f) f.onchange=run;
     });
   }).catch(function(e){ openPage(GT_BOOK.t,'<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
 }
+function sbSearch(qv, fid){
+  var res=$('sb-res'), hint=$('sb-hint');
+  if(!res) return;
+  var q=tc(qv), nq=normTe(q);
+  if(!nq){ res.innerHTML=''; if(hint) hint.textContent=''; return; }
+  var byId={}; SB.p.forEach(function(c){ byId[c.id]=c.title_te||c.id; });
+  var idxOf={}; SB.i.forEach(function(it,i){ idxOf[it]=i; });
+  var perCh={};
+  SB.i.forEach(function(it){ perCh[it.pariccheda_id]=(perCh[it.pariccheda_id]||0)+1; });
+  var posIn={};
+  var hits=[];
+  SB.i.forEach(function(it){
+    posIn[it.pariccheda_id]=(posIn[it.pariccheda_id]||0)+1;
+    if(fid && it.pariccheda_id!==fid) return;
+    var hay=normTe(it.text)+' '+normTe(JSON.stringify(it.examples||''));
+    if(hay.indexOf(nq)>-1) hits.push({it:it, pos:posIn[it.pariccheda_id]});
+  });
+  if(hint) hint.textContent=hits.length? (hits.length+' ఫలితాలు') : 'ఏమీ లేదు';
+  if(!hits.length){ res.innerHTML='<p class="sh-sub">“'+esc(q)+'” కు పుస్తకంలో ఏమీ దొరకలేదు.</p>'; return; }
+  var mark=function(t){ var e=esc(t); var qq=esc(q); if(!qq) return e; var i=e.indexOf(qq); if(i<0) return e; return e.slice(0,i)+'<mark>'+e.slice(i,i+qq.length)+'</mark>'+e.slice(i+qq.length); };
+  res.innerHTML='<div class="sb-hits">'+hits.slice(0,150).map(function(h){
+    var it=h.it, n=(it.sutra_number!=null)?it.sutra_number:'';
+    var pg=Math.max(1, Math.ceil(h.pos/SB_PER));
+    return '<div class="sb-hit" data-ch="'+esc(it.pariccheda_id)+'" data-pg="'+pg+'">'
+      + '<div class="sb-hitmeta">'+esc(byId[it.pariccheda_id]||'')+(n!==''?' · సూత్రము '+n:'')+' · పుట '+pg+'</div>'
+      + '<div class="sb-hittxt">'+mark(tc(it.text))+'</div></div>';
+  }).join('')+(hits.length>150?'<p class="sh-sub">…మొదటి 150 ఫలితాలు చూపబడ్డాయి.</p>':'')+'</div>';
+  res.querySelectorAll('.sb-hit').forEach(function(el){
+    el.onclick=function(){ sbChapter(el.getAttribute('data-ch'), +el.getAttribute('data-pg')); };
+  });
+}
 function exHtml(ex){
   if(!ex || !ex.length) return '';
-  var notes='', rows=[];
-  var take=function(list){
-    list.forEach(function(row){
-      if(!Array.isArray(row) || !row.length) return;
-      if(row.length===1){ var t=tc(row[0]); if(t) notes+='<div class="sb-exnote">'+esc(t)+'</div>'; return; }
-      var cells=row.map(tc).filter(function(x){ return x!==''; });
-      if(cells.length) rows.push(cells);
+  var out='';
+  var isFormula=function(c){ for(var i=0;i<c.length;i++){ if(c[i]==='+'||c[i]==='=') return true; } return false; };
+  var isHeader=function(c){ for(var i=0;i<c.length;i++){ if(/సంస్కృతము|ప్రాకృతము/.test(c[i])) return true; } return false; };
+  ex.forEach(function(grp){
+    if(!Array.isArray(grp) || !grp.length) return;
+    var rws = Array.isArray(grp[0]) ? grp : [grp];
+    var trows=[], notes=[];
+    rws.forEach(function(r){
+      if(!Array.isArray(r)) return;
+      var cells=r.map(tc);
+      var filled=cells.filter(function(x){ return x!==''; });
+      if(cells.length<2 || filled.length<2 || isFormula(cells)){
+        var t=tc(cells.join(' ')); if(t) notes.push(t); return;
+      }
+      trows.push(cells);
     });
-  };
-  ex.forEach(function(grp){ if(!Array.isArray(grp)) return; if(Array.isArray(grp[0])) take(grp); else take([grp]); });
-  var html='';
-  if(rows.length){
-    html+='<table class="sb-tbl"><tbody>'+rows.map(function(c){
-      var lhs=c.slice(0,-1).join(' '), rhs=c[c.length-1];
-      var i=c.indexOf('=');
-      if(i>-1){ lhs=c.slice(0,i).join(' '); rhs=c.slice(i+1).join(' '); }
-      return '<tr><td class="lhs">'+esc(lhs)+'</td><td class="eq">=</td><td class="rhs">'+esc(rhs)+'</td></tr>';
-    }).join('')+'</tbody></table>';
-  }
-  html+=notes;
-  return html?'<div class="sb-exs">'+html+'</div>':'';
+    if(trows.length){
+      var ncol=1;
+      trows.forEach(function(r){ if(r.length>ncol) ncol=r.length; });
+      var head=null, body=trows;
+      if(isHeader(trows[0]) && trows.length>1){ head=trows[0]; body=trows.slice(1); }
+      var h='<table class="sb-tbl">';
+      if(head){ h+='<thead><tr>'+head.map(function(c){ return '<th>'+esc(c)+'</th>'; }).join('')+'</tr></thead>'; }
+      h+='<tbody>'+body.map(function(r){
+        var row='';
+        for(var i=0;i<ncol;i++){ row+='<td>'+(i<r.length?esc(r[i]):'')+'</td>'; }
+        return '<tr>'+row+'</tr>';
+      }).join('')+'</tbody></table>';
+      out+='<div class="sb-tblwrap">'+h+'</div>';
+    }
+    notes.forEach(function(t){ out+='<div class="sb-exnote">'+esc(t)+'</div>'; });
+  });
+  return out?'<div class="sb-exs">'+out+'</div>':'';
 }
 function sbChapter(id, page){
   sbLoad().then(function(){
