@@ -229,6 +229,13 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .gt-quote + .gt-quote{margin-top:0}
 .gt-sutra{color:#1d4ed8;font-weight:400;text-align:center;border-left-color:#1d4ed8}
 .gt-num{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);vertical-align:super}
+.sb-sutra{text-indent:0;margin:14px 0 6px;padding:13px 17px;background:var(--surface-2);border-left:3px solid #1d4ed8;border-radius:0 10px 10px 0;text-align:center}
+.sb-sutra .sb-txt{font-family:var(--font-tel);font-size:17.5px;color:#1d4ed8;line-height:1.95}
+.sb-num{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);vertical-align:super;margin-left:6px}
+.sb-exs{margin:0 0 4px 14px;padding-left:12px;border-left:1px dashed var(--line)}
+.sb-ex{font-family:var(--font-tel);font-size:16px;line-height:1.85;text-indent:0;margin:3px 0}
+.sb-exnote{font-family:var(--font-tel);font-size:15.5px;color:var(--ink-dim);line-height:1.8;margin:3px 0}
+@media (prefers-color-scheme: dark){.sb-sutra .sb-txt{color:#8ab4ff}}
 .gt-pager{display:flex;justify-content:space-between;gap:10px;margin:28px 0 8px;padding-top:17px;border-top:1px solid var(--line)}
 @media (prefers-color-scheme: dark){.gt-sutra{color:#8ab4ff}}
 .page-body{flex:1;overflow-y:auto;padding:16px calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
@@ -512,7 +519,20 @@ function saveAnswer(q, a, sb){
   storeSaved(arr);
   if(sb){ sb.classList.add('on'); sb.textContent='\u2605 \u0c38\u0c47\u0c35\u0c4d \u0c05\u0c2f\u0c3f\u0c02\u0c26\u0c3f'; }
 }
-var GT_BOOKS=[{f:'grammar_1.json',t:'ప్రౌఢవ్యాకరణ ఘంటాపథము'},{f:'grammar_2.json',t:'బాలవ్యాకరణ ఘంటాపథము'}];
+var GT_BOOKS=[{t:'బాలవ్యాకరణము — సూత్రములు',db:true},{f:'grammar_1.json',t:'ప్రౌఢవ్యాకరణ ఘంటాపథము'},{f:'grammar_2.json',t:'బాలవ్యాకరణ ఘంటాపథము'}];
+var SB={p:[],i:[]};
+function sbGet(path,params){
+  var url=CFG.url+'/rest/v1/'+path+'?'+params;
+  return fetch(url,{headers:{'apikey':CFG.key,'Authorization':'Bearer '+CFG.key}})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+}
+function sbLoad(){
+  if(SB.p.length) return Promise.resolve(SB);
+  return Promise.all([
+    sbGet('bala_vyakarana_paricchedas','select=id,ord,title_te&order=ord.asc'),
+    sbGet('bala_vyakarana_items','select=pariccheda_id,item_order,type,sutra_number,text,examples&order=pariccheda_id.asc,item_order.asc')
+  ]).then(function(r){ SB.p=r[0]||[]; SB.i=r[1]||[]; return SB; });
+}
 var GT_CACHE={};
 function gtLoad(i){
   if(GT_CACHE[i]) return Promise.resolve(GT_CACHE[i]);
@@ -526,6 +546,7 @@ function pageText(){
       el.querySelectorAll('button').forEach(function(x){ x.onclick=function(){ gtBook(+x.getAttribute('data-i')); }; }); });
 }
 function gtBook(i){
+  if(GT_BOOKS[i].db){ return sbBook(); }
   openPage(GT_BOOKS[i].t,'<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> పాఠ్యము తెస్తోంది…</div>');
   gtLoad(i).then(function(d){
     var pages=d.pages||[];
@@ -535,6 +556,49 @@ function gtBook(i){
       document.querySelectorAll('#gt-pages button').forEach(function(x){ x.onclick=function(){ gtPage(i, +x.getAttribute('data-n')); }; });
     });
   }).catch(function(e){ openPage(GT_BOOKS[i].t, '<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
+}
+function sbBook(){
+  openPage(GT_BOOKS[0].t,'<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> సూత్రములు తెస్తోంది…</div>');
+  sbLoad().then(function(){
+    var html='<p class="sh-sub">బాలవ్యాకరణము — పరిచ్ఛేదముల వారీగా. ఏ పరిచ్ఛేదము చూడాలో నొక్కండి.</p><div class="chipwrap" id="sb-ch">'
+      + SB.p.map(function(c){ var n=SB.i.filter(function(x){return x.pariccheda_id===c.id;}).length;
+          return '<button data-id="'+esc(c.id)+'">'+esc(c.title_te||c.id)+' ('+n+')</button>'; }).join('') + '</div>';
+    openPage(GT_BOOKS[0].t, html, function(){
+      document.querySelectorAll('#sb-ch button').forEach(function(b){ b.onclick=function(){ sbChapter(b.getAttribute('data-id')); }; });
+    });
+  }).catch(function(e){ openPage(GT_BOOKS[0].t,'<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
+}
+function exHtml(ex){
+  if(!ex || !ex.length) return '';
+  var out='';
+  var rows=function(list){
+    list.forEach(function(row){
+      if(!Array.isArray(row) || !row.length) return;
+      if(row.length===1){ out+='<div class="sb-exnote">'+esc(String(row[0]))+'</div>'; return; }
+      out+='<div class="sb-ex">'+esc(row.join(' '))+'</div>';
+    });
+  };
+  ex.forEach(function(grp){ if(!Array.isArray(grp)) return; if(Array.isArray(grp[0])) rows(grp); else rows([grp]); });
+  return out?'<div class="sb-exs">'+out+'</div>':'';
+}
+function sbChapter(id){
+  sbLoad().then(function(){
+    var ch=SB.p.filter(function(c){return c.id===id;})[0];
+    var items=SB.i.filter(function(x){return x.pariccheda_id===id;});
+    var body=items.map(function(it){
+      var n=(it.sutra_number!=null)?it.sutra_number:'';
+      if(it.type==='sutra') return '<div class="sb-sutra"><span class="sb-txt">'+esc(it.text||'')+'</span>'+(n!==''?'<span class="sb-num">'+n+'</span>':'')+'</div>'+exHtml(it.examples);
+      if(it.type==='heading') return '<div class="gt-h">'+esc(it.text||'')+'</div>';
+      return '<div class="gt-b">'+esc(it.text||'')+'</div>'+exHtml(it.examples);
+    }).join('');
+    var html='<div class="gt-bar"><button class="pback" id="sb-back">← పరిచ్ఛేదములు</button>'
+      + '<span class="gt-count">'+items.length+' అంశములు</span></div>'
+      + '<div class="gt-head">'+esc(ch?(ch.title_te||ch.id):id)+'</div>'
+      + '<div class="gt-body">'+body+'</div>';
+    openPage(esc(ch?(ch.title_te||ch.id):id), html, function(){
+      var bb=$('sb-back'); if(bb) bb.onclick=function(){ sbBook(); };
+    });
+  });
 }
 function gtPage(i, n){
   gtLoad(i).then(function(d){
