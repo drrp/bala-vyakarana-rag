@@ -746,39 +746,126 @@ function qzTableRows(ex){
   });
   return out;
 }
+function qzNum(t){ return t.replace(/[।.]+$/,'').replace(/\s+/g,' ').trim(); }
+/* క్రియా: "వర్తమానంబున ల ట్టగు" -> "... లట్టు" so the లకారము is one token */
+function qzNormLak(t){
+  return t.replace(/ల\s+ట్టు?గు/g,'లట్టు').replace(/లి\s+ట్టు?గు/g,'లిట్టు')
+          .replace(/లృ\s+ట్టు?గు/g,'లృట్టు').replace(/లా\s+ట్టు?గు/g,'లాట్టు')
+          .replace(/లూ\s+ట్టు?గు/g,'లూట్టు').replace(/ల\s+ట్టు?/g,'లట్టు');
+}
+var QZ_VIB=['ప్రథమ','ద్వితీయ','తృతీయ','చతుర్థి','పంచమి','షష్ఠి','సప్తమి'];
+var QZ_VIB_FIX={'బ్రథమ':'ప్రథమ','బ్రద్వితీయ':'ద్వితీయ','బ్రతృతీయ':'తృతీయ'};
+var QZ_LAK=['లట్టు','లిట్టు','లృట్టు','లాట్టు','లూట్టు','లఙి'];
+/* words that name a category, exactly as the sutra writes them */
+var QZ_TERMS=['తత్సమంబు','తద్భవంబు','దేశ్యంబు','గ్రామ్యంబు','గ్రాహ్యంబు','స్థిరములు',
+ 'ద్రుతంబు','ద్రుతప్రకృతికములు','సమాసంబు','త్రికంబు','యచ్చ','ముత్తు','మహత్తు','కళ',
+ 'సవర్ణంబులు','తాలవ్యంబులు','దంత్యంబులు','సర్వనామంబులు','ముఙ్ఙులు','డుమంతం',
+ 'వళిప్రాసంబులు','శబ్దపల్లవంబులు','త్రివిధంబు','పరుషంబులు','సరళంబులు',
+ 'లఘువులు','అలఘువులు','ద్వివిధంబులు','వక్రములు','వక్రతమములు'];
+var QZ_COPULA=/(అనంబడు|అనఁబడు|నాఁబడు|చెప్పంబడు|అనంబడును)$/;
+
+function qzDefTerm(t){
+  var w=t.split(/\s+/); if(w.length<3) return null;
+  if(QZ_COPULA.test(t)){
+    var last=w[w.length-1];
+    var cop=last.match(/(.*?)(లనంబడు|అనంబడు|అనఁబడు|నాఁబడు|చెప్పంబడు|లనఁబడు)$/);
+    if(cop && cop[1] && cop[1].length>=3) return {term:cop[1], stem:w.slice(0,w.length-1).join(' ')};
+    if(w.length>=3){ var tt=w[w.length-2]; if(!/(ని|ను)$/.test(tt)) return {term:tt, stem:w.slice(0,w.length-2).join(' ')}; }
+    return null;
+  }
+  var tl=w[w.length-1];
+  if(QZ_TERMS.indexOf(tl)>-1 && !/(ని|ను)$/.test(tl)) return {term:tl, stem:w.slice(0,w.length-1).join(' ')};
+  return null;
+}
+/* exactly one విభక్తి name, with a subject before it */
+function qzVib(t){
+  var w=t.split(/\s+/), idx=-1, hit=null;
+  for(var i=0;i<w.length;i++){
+    var tok=w[i].replace(/[।.,]+$/,''); tok=QZ_VIB_FIX[tok]||tok;
+    if(QZ_VIB.indexOf(tok)>-1){ if(idx>-1) return null; idx=i; hit=tok; }
+  }
+  if(idx<1) return null;
+  var subj=w.slice(0,idx).join(' ').trim();
+  if(!subj || subj.split(/\s+/).length>8) return null;
+  return {marker:subj, vib:hit};
+}
+var QZ_KALA=/(వర్తమాన|భూత|భావి|తద్ధర్మ|ఆశీ|వ్యతిరేక|విధి)/;
+function qzLak(t){
+  var w=t.split(/\s+/), idx=-1, hit=null;
+  for(var i=0;i<w.length;i++){
+    var tok=w[i].replace(/[।.,]+$/,'');
+    if(QZ_LAK.indexOf(tok)>-1){ if(idx>-1) return null; idx=i; hit=tok; }
+  }
+  if(idx<1) return null;
+  var subj=w.slice(0,idx).join(' ').trim();
+  if(!subj || subj.split(/\s+/).length>6) return null;
+  if(!QZ_KALA.test(subj)) return null;
+  return {marker:subj, lak:hit};
+}
 function qzBuild(fid, n){
   var items=SB.i.filter(function(x){ return x.type==='sutra' && (!fid || x.pariccheda_id===fid) && tc(x.text); });
-  var allSutras=SB.i.filter(function(x){ return x.type==='sutra' && tc(x.text); }).map(function(x){ return tc(x.text); });
   var allCh=SB.p.map(function(c){ return c.title_te||c.id; });
-  var pairs=[];
-  items.forEach(function(it){ qzTableRows(it.examples).forEach(function(c){ if(c[0]&&c[1]) pairs.push({q:c[0], a:c[1], ref:it}); }); });
-  var allForms=pairs.map(function(p){ return p.a; });
-  var qs=[], capA=Math.max(1,Math.round(n*0.4)), capB=Math.max(1,Math.round(n*0.8));
+  var pool={form:[], vib:[], def:[], lak:[], ch:[]};
 
+  /* 1. రూప నిర్ణయము — from the example tables */
+  var pairs=[];
+  items.forEach(function(it){
+    qzTableRows(it.examples).forEach(function(c){
+      if(c.length>=2 && c[0] && c[1] && c[1].indexOf(',')<0 && c[1].split(/\s+/).length===1)
+        pairs.push({q:c[0], a:c[1], ref:it});
+    });
+  });
+  var allForms=pairs.map(function(p){ return p.a; });
   qzShuffle(pairs.slice()).forEach(function(p){
-    if(qs.length>=capA) return;
-    var wrong=qzPick(allForms,3,p.a); if(wrong.length<3) return;
-    qs.push({kind:'రూప నిర్ణయము', q:'‘'+p.q+'’ అను సంస్కృత పదమునకు తెలుగు రూపము ఏది?',
+    var same=pairs.filter(function(x){ return x.ref===p.ref; }).map(function(x){ return x.a; });
+    var wrong=qzPick(same,3,p.a);
+    if(wrong.length<3) wrong=wrong.concat(qzPick(allForms,3-wrong.length,p.a));
+    if(wrong.length<3) return;
+    pool.form.push({kind:'రూప నిర్ణయము', q:'‘'+p.q+'’ అను సంస్కృత పదమునకు తెలుగు రూపము ఏది?',
       opts:qzShuffle([p.a].concat(wrong)), ans:p.a, ref:p.ref});
   });
-  qzShuffle(items.slice()).forEach(function(it){
-    if(qs.length>=capB) return;
-    var w=tc(it.text).split(/\s+/); if(w.length<4) return;
-    var cut=Math.min(3, w.length-2);
-    var head=w.slice(0,w.length-cut).join(' '), tail=w.slice(w.length-cut).join(' ');
-    var others=allSutras.filter(function(x){ return x!==tc(it.text); }).map(function(x){ var ws=x.split(/\s+/); return ws.slice(Math.max(0,ws.length-cut)).join(' '); });
-    var wrong=qzPick(others,3,tail); if(wrong.length<3) return;
-    qs.push({kind:'సూత్ర పూర్తి', q:'ఈ సూత్రమును పూర్తి చేయండి:\n‘'+head+' ____’',
-      opts:qzShuffle([tail].concat(wrong)), ans:tail, ref:it});
+
+  /* 2. విభక్తి — marker -> case (డు-ము-వు-లు ప్రథమ / కర్మంబున ద్వితీయ …) */
+  items.forEach(function(it){
+    var v=qzVib(qzNum(tc(it.text))); if(!v) return;
+    var wrong=qzPick(QZ_VIB,3,v.vib); if(wrong.length<3) return;
+    pool.vib.push({kind:'విభక్తి నిర్ణయము', q:'‘'+v.marker+'’ — ఇది ఏ విభక్తికి చెందును?',
+      opts:qzShuffle([v.vib].concat(wrong)), ans:v.vib, ref:it});
   });
+
+  /* 3. లకారము — కాలము -> లకారము (వర్తమానంబున లట్టు …) */
+  items.forEach(function(it){
+    var v=qzLak(qzNormLak(qzNum(tc(it.text)))); if(!v) return;
+    var wrong=qzPick(QZ_LAK,3,v.lak); if(wrong.length<3) return;
+    pool.lak.push({kind:'లకార నిర్ణయము', q:'‘'+v.marker+'’ — ఇచట ఏ లకారము అగును?',
+      opts:qzShuffle([v.lak].concat(wrong)), ans:v.lak, ref:it});
+  });
+
+  /* 4. నిర్వచనము -> సంజ్ఞ (technical terms) */
+  var defs=[];
+  items.forEach(function(it){ var d=qzDefTerm(qzNum(tc(it.text))); if(d && d.stem.split(/\s+/).length>=2) defs.push({d:d, ref:it}); });
+  var allTerms=defs.map(function(o){ return o.d.term; });
+  qzShuffle(defs.slice()).forEach(function(o){
+    var wrong=qzPick(allTerms,3,o.d.term); if(wrong.length<3) return;
+    pool.def.push({kind:'నిర్వచనము — పదము', q:'‘'+o.d.stem+'’ — ఇది ఏమని నిర్వచింపఁబడినది?',
+      opts:qzShuffle([o.d.term].concat(wrong)), ans:o.d.term, ref:o.ref});
+  });
+
+  /* 5. పరిచ్ఛేద నిర్ణయము */
   qzShuffle(items.slice()).forEach(function(it){
-    if(qs.length>=n) return;
-    var correct=qzTitle(it.pariccheda_id), wrong=qzPick(allCh,3,correct);
-    if(wrong.length<3) return;
-    qs.push({kind:'పరిచ్ఛేద నిర్ణయము', q:'‘'+tc(it.text)+'’ అను సూత్రము ఏ పరిచ్ఛేదమునకు చెందినది?',
+    var correct=qzTitle(it.pariccheda_id), wrong=qzPick(allCh,3,correct); if(wrong.length<3) return;
+    pool.ch.push({kind:'పరిచ్ఛేద నిర్ణయము', q:'‘'+tc(it.text)+'’ అను సూత్రము ఏ పరిచ్ఛేదమునకు చెందినది?',
       opts:qzShuffle([correct].concat(wrong)), ans:correct, ref:it});
   });
-  return qzShuffle(qs).slice(0,n);
+
+  /* interleave the pools so no single type dominates */
+  var order=['def','vib','lak','form','ch'], out=[], guard=0;
+  while(out.length<n && guard++<5000){
+    var added=false;
+    for(var k=0;k<order.length && out.length<n;k++){ var p=pool[order[k]]; if(p.length){ out.push(p.shift()); added=true; } }
+    if(!added) break;
+  }
+  return qzShuffle(out);
 }
 function pageQuiz(){
   openPage('క్విజ్','<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> తెస్తోంది…</div>');
