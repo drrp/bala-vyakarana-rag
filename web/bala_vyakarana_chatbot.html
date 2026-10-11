@@ -296,6 +296,10 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 
 <script>
 const PROJECT_URL = "https://qndkvizszwdvhrccjxtr.supabase.co";
+// ---- EDITABLE WORDING ----
+// Shown when the question is not covered by the grammar texts.
+// <పదము> is replaced by the user's own word. Edit the sentence freely.
+const NOT_FOUND_TEMPLATE = '"<పదము>" కు సంబంధించిన వ్యాకరణవిశేషాలు అందుబాటులో లేవు.';
 const FN = "/functions/v1/bala-rag";
 const $ = id => document.getElementById(id);
 const app = $('app');
@@ -436,7 +440,7 @@ async function send(override){
   try{
     const res=await fetch(CFG.url+FN,{method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+CFG.key,'apikey':CFG.key},
-      body:JSON.stringify({messages:HISTORY, match_count:24})});
+      body:JSON.stringify({messages:HISTORY, match_count:24, not_found:NOT_FOUND_TEMPLATE})});
     const data=await res.json().catch(()=>({}));
     if(res.status===401) throw new Error('401 Unauthorized — the key was rejected. Edge Functions only accept the legacy anon JWT key (starts with "eyJ…"), not the newer "sb_publishable_…" key. Get it from Supabase → Project Settings → API Keys → Legacy API keys, and paste that.');
     if(!res.ok||data.error) throw new Error(data.error? (data.error+(data.detail?(' — '+data.detail):'')) : ('HTTP '+res.status));
