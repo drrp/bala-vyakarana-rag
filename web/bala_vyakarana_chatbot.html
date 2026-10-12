@@ -915,13 +915,17 @@ function qzLak(t){
   if(!QZ_KALA.test(subj)) return null;
   return {marker:subj, lak:hit};
 }
+/* words that are grammar/function words, never an example form */
+var QZ_STOP={'ఇవి':1,'అవి':1,'ఇది':1,'అది':1,'ఏది':1,'ఏవి':1,'అను':1,'అని':1,'యను':1,'అగు':1,'అగును':1,'అగున':1};
+/* the book's closing formulae ("… ఇత్యాదులు", "… అరయునది") are prose, not examples */
+var QZ_NOTE=/ఇత్యాద|అరయునది|ఎఱుంగునది|ఊహ్యంబు|యూహ్యంబు|తెలియునది|చూడునది|గ్రహింపునది|ఇత్యాదుల/;
 /* every word a sutra offers as an example, flattened out of its tables/lists */
 function qzExWords(it){
   var out=[];
   var push=function(s){
     String(s||'').split(/[,;]/).forEach(function(p){
       var t=tc(p).replace(/[.।]+$/,'').trim();
-      if(t && t.split(/\s+/).length<=2 && t.length>=2) out.push(t);
+      if(t && t.split(/\s+/).length<=2 && t.length>=2 && !QZ_STOP[t] && !QZ_NOTE.test(t)) out.push(t);
     });
   };
   qzTableRows(it.examples).forEach(function(r){ if(r.cells.length>=2) push(r.cells[1]); });
@@ -1023,31 +1027,59 @@ function qzBuild(fid, n){
   items.forEach(function(it){
     qzFormulas(it.examples).forEach(function(f){ forms.push({f:f, ref:it}); });
   });
-  var allRes=forms.map(function(o){ return o.f.r; });
   qzShuffle(forms.slice()).forEach(function(o){
-    var wrong=qzPick(allRes,3,o.f.r);
-    wrong=wrong.filter(function(w){
-      return w!==o.f.r && o.f.r.indexOf(w)<0 && w.indexOf(o.f.r)<0 && w.split(/\s+/).length<=2;
+    /* distractors are other real results, the same pariccheda first, so a wrong
+       option is a form the book actually derives — just not from this rule */
+    var sameRes=[], otherRes=[];
+    forms.forEach(function(x){
+      var r=x.f.r;
+      if(x.ref===o.ref || r===o.f.r) return;
+      if(r.split(/\s+/).length>2 || o.f.r.indexOf(r)>=0 || r.indexOf(o.f.r)>=0) return;
+      (x.ref.pariccheda_id===o.ref.pariccheda_id ? sameRes : otherRes).push(r);
     });
+    var wrong=qzPick(sameRes,3,o.f.r);
+    if(wrong.length<3) wrong=wrong.concat(qzPick(otherRes,3-wrong.length,o.f.r));
     if(wrong.length<3) return;
     pool.sadhu.push({kind:'రూప సాధన', q:'‘'+o.f.a+'’ + ‘'+o.f.b+'’ = ?',
       opts:qzShuffle([o.f.r].concat(wrong)), ans:o.f.r, ref:o.ref});
   });
 
-  /* 7. సూత్రము — ఉదాహరణ : which example belongs to this sutra? */
-  var exSets=[];
+  /* 7. సూత్రము — ఉదాహరణ : which of these is a real example of this sutra?
+        Only the book's own structured "X + Y = Z" rows are used. A note, or a
+        governing word-list such as "ఏమి, మఱి, కిషష్టి, …", is NOT an example, so
+        none of them can become an option. Every option is thus a genuine example
+        form, and each distractor is a real example of a DIFFERENT sutra — the
+        nearest pariccheda first — so the wrong options stay conceptually adjacent
+        to the right one instead of being random words from the whole book. */
+  var exForm=[];
   items.forEach(function(it){
-    var w=qzExWords(it).filter(function(x){ return x.split(/\s+/).length<=2 && x.length>=2; });
-    if(w.length) exSets.push({it:it, words:w});
+    qzFormulas(it.examples).forEach(function(f){
+      var a=tc(f.a), b=tc(f.b), r=tc(f.r).replace(/[.।]+$/,'').trim();
+      if(!a||!b||!r) return;
+      if(a.split(/\s+/).length>2 || b.split(/\s+/).length>2 || r.split(/\s+/).length>4) return;
+      exForm.push({txt:a+' + '+b+' = '+r, ref:it});
+    });
   });
-  var allEx=[]; exSets.forEach(function(p){ p.words.forEach(function(w){ allEx.push(w); }); });
-  qzShuffle(exSets.slice()).forEach(function(p){
-    var ans=p.words[Math.floor(Math.random()*p.words.length)];
-    var others=allEx.filter(function(w){ return p.words.indexOf(w)<0; });
-    var wrong=qzPick(others,3,ans);
+  var bySutra={}, sutraIds=[];
+  exForm.forEach(function(x){
+    var k=x.ref.id;
+    if(!bySutra[k]){ bySutra[k]={ref:x.ref, list:[]}; sutraIds.push(k); }
+    bySutra[k].list.push(x.txt);
+  });
+  qzShuffle(sutraIds.slice()).forEach(function(k){
+    var g=bySutra[k];
+    var ans=g.list[Math.floor(Math.random()*g.list.length)];
+    var sameEx=[], otherEx=[];
+    exForm.forEach(function(x){
+      if(x.ref.id===k || x.txt===ans) return;
+      (x.ref.pariccheda_id===g.ref.pariccheda_id ? sameEx : otherEx).push(x.txt);
+    });
+    var wrong=qzPick(sameEx,3,ans);
+    if(wrong.length<3) wrong=wrong.concat(qzPick(otherEx,3-wrong.length,ans));
     if(wrong.length<3) return;
-    pool.sutra.push({kind:'సూత్రము — ఉదాహరణ', q:'‘'+tc(p.it.text)+'’ అను సూత్రమునకు సరియైన ఉదాహరణ ఏది?',
-      opts:qzShuffle([ans].concat(wrong)), ans:ans, ref:p.it});
+    pool.sutra.push({kind:'సూత్రము — ఉదాహరణ',
+      q:'‘'+tc(g.ref.text)+'’ అను సూత్రమునకు సరియైన ఉదాహరణ ఏది?',
+      opts:qzShuffle([ans].concat(wrong)), ans:ans, ref:g.ref});
   });
 
   /* interleave so no single type dominates */
