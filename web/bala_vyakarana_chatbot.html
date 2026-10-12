@@ -1080,7 +1080,9 @@ function qzExWords(it){
   });
   return out;
 }
-var QZ_SEEN_KEY='bala_quiz_seen_v1';
+/* Versioned: bumping this key clears the stored history on the next load, so a new
+   build never inherits a history that has already swallowed its (modest) pool. */
+var QZ_SEEN_KEY='bala_quiz_seen_v2';
 function qzSeen(){ try{ var a=JSON.parse(localStorage.getItem(QZ_SEEN_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 function qzSeenAdd(list){ try{ localStorage.setItem(QZ_SEEN_KEY, JSON.stringify(qzSeen().concat(list).slice(-3000))); }catch(e){} }
 function qzSig(q){ return q.kind+'|'+q.q+'|'+q.ans; }
@@ -1335,13 +1337,14 @@ function qzBuild(fid, n){
     local[sig]=1; uniq.push(q);
   });
   var fresh=uniq.filter(function(q){ return !seen[qzSig(q)]; });
-  if(fresh.length < n && fresh.length < uniq.length){
-    /* The history has swallowed too much of the pool. Starting it over and topping
-       the quiz up beats serving a two-question quiz — which is what happened when
-       only the completely-empty case was handled. */
+  /* Always hand back as many questions as were asked for. If the history blocked part
+     of the pool, start it over and top the quiz up rather than serving a short quiz —
+     that was the bug: only the completely-empty case was handled, so once a chapter's
+     pool had been worked through the quiz collapsed to the one question left over. */
+  if(fresh.length < Math.min(n, uniq.length)){
     try{ localStorage.removeItem(QZ_SEEN_KEY); }catch(e){}
     var repeat=uniq.filter(function(q){ return seen[qzSig(q)]; });
-    fresh=fresh.concat(repeat).slice(0, n);
+    fresh=fresh.concat(repeat).slice(0, Math.min(n, uniq.length));
   }
   if(!fresh.length) fresh=uniq.slice(0, n);
   qzSeenAdd(fresh.map(qzSig));
@@ -1356,9 +1359,14 @@ function pageQuiz(){
       +'<option value="20">20 ప్రశ్నలు</option><option value="30">30 ప్రశ్నలు</option><option value="50">50 ప్రశ్నలు</option><option value="100">100 ప్రశ్నలు</option></select>'
       +'<button id="qz-go">ప్రారంభించు</button></div></div>'
       +'<p class="sh-sub">గ్రంథము నుండి స్వయంగా తయారగు ప్రశ్నలు — సూత్రములు, ఉదాహరణలు, పరిచ్ఛేదములు. సమాధానము నొక్కగానే సరి/తప్పు తెలియును.</p>'
+      +'<p class="sh-sub"><button class="pback" id="qz-clear">చరిత్ర చెరిపివేయి</button> <span id="qz-clearmsg"></span></p>'
       +'<div id="qz-body"></div>';
     openPage('పరీక్షణ', html, function(){
       $('qz-go').onclick=function(){ qzStart($('qz-ch').value, Number($('qz-n').value)||20); };
+      $('qz-clear').onclick=function(){
+        try{ localStorage.removeItem(QZ_SEEN_KEY); }catch(e){}
+        $('qz-clearmsg').textContent='చెరిపివేయఁబడినది — ఇపుడు అన్ని ప్రశ్నలు తిరిగి వచ్చును.';
+      };
     });
   }).catch(function(e){ openPage('పరీక్షణ','<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
 }
