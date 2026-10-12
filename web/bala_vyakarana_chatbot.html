@@ -1327,17 +1327,23 @@ function qzBuild(fid, n){
   /* never show the same question twice — not within a quiz, not across them */
   var seen={}, seenArr=qzSeen();
   seenArr.forEach(function(k){ seen[k]=1; });
-  var fresh=[];
+  /* one of each question, in this quiz's order */
+  var uniq=[], local={};
   qzShuffle(out).forEach(function(q){
     var sig=qzSig(q);
-    if(seen[sig]) return;      // asked before
-    if(fresh.some(function(x){ return qzSig(x)===sig; })) return;  // asked earlier this quiz
-    seen[sig]=1; fresh.push(q);
+    if(local[sig]) return;
+    local[sig]=1; uniq.push(q);
   });
-  if(!fresh.length){
+  var fresh=uniq.filter(function(q){ return !seen[qzSig(q)]; });
+  if(fresh.length < n && fresh.length < uniq.length){
+    /* The history has swallowed too much of the pool. Starting it over and topping
+       the quiz up beats serving a two-question quiz — which is what happened when
+       only the completely-empty case was handled. */
     try{ localStorage.removeItem(QZ_SEEN_KEY); }catch(e){}
-    return qzShuffle(out);
+    var repeat=uniq.filter(function(q){ return seen[qzSig(q)]; });
+    fresh=fresh.concat(repeat).slice(0, n);
   }
+  if(!fresh.length) fresh=uniq.slice(0, n);
   qzSeenAdd(fresh.map(qzSig));
   return fresh;
 }
