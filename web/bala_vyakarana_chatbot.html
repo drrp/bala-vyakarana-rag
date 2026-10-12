@@ -285,6 +285,11 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .qz-opt.wrong{background:#fbe9e7;border-color:#b4441f;color:#8c2f13}
 :root[data-theme="dark"] .qz-opt.right{background:#1e3320;border-color:#5f9c5f;color:#c6e6c6}
 :root[data-theme="dark"] .qz-opt.wrong{background:#3a1f16;border-color:#c9662f;color:#f2bd9f}
+.qz-hintwrap{margin-top:10px}
+.qz-hintbtn{font-family:var(--font-tel);font-size:12px;padding:6px 12px;border-radius:999px;border:1px dashed var(--line-strong);background:transparent;color:var(--ink-dim);cursor:pointer}
+.qz-hintbtn:hover{border-color:var(--accent);color:var(--accent)}
+.qz-hint{display:none;font-family:var(--font-tel);font-size:14px;line-height:1.75;color:var(--ink-dim);margin-top:8px;padding:9px 12px;border-left:3px solid var(--gold);background:var(--surface-2);border-radius:0 8px 8px 0}
+.qz-hint.on{display:block}
 .qz-fb{margin-top:14px}
 .qz-verdict{font-family:var(--font-tel);font-size:15px;font-weight:600;margin-bottom:6px}
 .qz-verdict.ok{color:#3f7d3f}
@@ -871,16 +876,30 @@ function qzBuild(fid, n){
       var col=r.cells.length-1, ans=r.cells[col];
       if(!r.cells[0] || !ans) return;
       if(ans.indexOf(',')>=0 || ans.split(/\s+/).length>1) return;
-      pairs.push({q:r.cells[0], a:ans, src:r.head[0]||'', label:r.head[col]||r.head[r.head.length-1], ref:it});
+      pairs.push({q:r.cells[0], a:ans, src:r.head[0]||'', label:r.head[col]||r.head[r.head.length-1],
+                  sibs:r.cells.filter(function(x,i){ return x && x!==ans && i!==0; }), row:r.cells, headArr:r.head, ref:it});
     });
   });
   qzShuffle(pairs.slice()).forEach(function(p){
     var same=pairs.filter(function(x){ return x.ref===p.ref && x.label===p.label; }).map(function(x){ return x.a; });
-    var wrong=qzPick(same,3,p.a);
+    // distractors: the SAME ROW's other columns first (near-miss forms), then other
+    // rows of the same table and column. Nothing from another table.
+    var sibs=qzPick(p.sibs,3,p.a);
+    var wrong=sibs.concat(qzPick(same.filter(function(x){ return sibs.indexOf(x)<0; }),3-sibs.length,p.a));
     if(wrong.length<3) return;
+    var hint=null;
+    if(p.row && p.row.length>=2){
+      var bits=[];
+      p.row.forEach(function(c,i){
+        if(i===p.row.length-1 || !c) return;          // never reveal the answer column
+        var lb=(p.headArr && p.headArr[i]) ? (qzStem(p.headArr[i])+': ') : '';
+        bits.push(lb+c);
+      });
+      if(bits.length) hint=bits.join(' · ');
+    }
     pool.form.push({kind:'రూప నిర్ణయము',
       q:'‘'+p.q+'’ అను '+qzStem(p.src)+' పదమునకు '+qzStem(p.label)+' రూపము ఏది?',
-      opts:qzShuffle([p.a].concat(wrong)), ans:p.a, ref:p.ref});
+      opts:qzShuffle([p.a].concat(wrong)), ans:p.a, ref:p.ref, hint:hint});
   });
 
   /* 2. విభక్తి — marker -> case */
@@ -1013,8 +1032,17 @@ function qzRender(){
   b.innerHTML='<div class="qz-card"><div class="qz-meta">ప్రశ్న '+(QZ.i+1)+' / '+QZ.qs.length+' · '+esc(q.kind)+' · స్కోరు '+QZ.score+'</div>'
     +'<div class="qz-q">'+esc(q.q).replace(/\n/g,'<br>')+'</div>'
     +'<div class="qz-opts">'+q.opts.map(function(o,i){ return '<button class="qz-opt" data-i="'+i+'">'+esc(o)+'</button>'; }).join('')+'</div>'
+    +'<div class="qz-hintwrap"><button class="qz-hintbtn" id="qz-hint">సూచన</button><div class="qz-hint" id="qz-hintbox"></div></div>'
     +'<div class="qz-fb" id="qz-fb"></div></div>';
   b.querySelectorAll('.qz-opt').forEach(function(btn){ btn.onclick=function(){ qzAnswer(btn, Number(btn.getAttribute('data-i'))); }; });
+  var hb=$('qz-hint');
+  if(hb) hb.onclick=function(){
+    var box=$('qz-hintbox');
+    var t=(q.hint?('సంబంధిత రూపములు — '+q.hint):'');
+    if(q.ref) t=(t?t+' · ':'')+qzRef(q.ref);
+    box.innerHTML=esc(t);
+    box.classList.add('on'); hb.style.display='none';
+  };
 }
 function qzAnswer(btn, idx){
   if(QZ.done) return;
