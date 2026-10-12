@@ -82,7 +82,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opac
   box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 30%, transparent)}
 .btn.primary:hover{filter:brightness(1.04)}
 .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
-#clear{font-family:var(--font-body);font-size:11.5px;font-weight:500;padding:4px 11px;border-radius:999px;
+#clear{font-family:var(--font-body);font-size:13px;font-weight:600;padding:8px 16px;border-radius:999px;
   background:var(--surface-2);color:var(--ink-dim);border:1px solid var(--line);box-shadow:none}
 #clear:hover{background:var(--surface);border-color:var(--accent);color:var(--ink);box-shadow:none}
 :focus-visible{outline:none;box-shadow:var(--ring)}
@@ -193,7 +193,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   .top{flex-wrap:nowrap;gap:10px;padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right))}
   .brand{gap:10px}.brand-txt h1{font-size:15px}
   .logo{height:34px}
-  #clear{padding:3px 9px;font-size:10.5px}
+  #clear{padding:7px 13px;font-size:12px}
 }
 @media (max-width:400px){.brand-txt h1{font-size:13.5px}.logo{height:30px}}
 @media (prefers-reduced-motion: reduce){
@@ -201,10 +201,13 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 }
 
 /* ---------- tools row ---------- */
-.tools{position:relative;z-index:2;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:6px calc(10px + env(safe-area-inset-right)) 6px calc(10px + env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--bg)}
+.tools{position:relative;z-index:2;display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;padding:10px calc(12px + env(safe-area-inset-right)) 10px calc(12px + env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--bg)}
 .tools::-webkit-scrollbar{display:none}
-.tool{flex:none;font-family:var(--font-tel);font-size:10.5px;line-height:1;padding:5px 8px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;transition:transform .14s var(--ease),background .18s,border-color .18s}
-.tool:hover{background:var(--surface-2);border-color:var(--accent)}
+.tool{flex:none;font-family:var(--font-tel);font-size:14px;font-weight:600;letter-spacing:.01em;line-height:1;padding:11px 20px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap;box-shadow:var(--shadow-1);transition:transform .16s var(--ease),background .18s,border-color .18s,box-shadow .18s,color .18s}
+.tool:hover{background:var(--surface-2);border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-2)}
+.tool:active{transform:translateY(0) scale(.98)}
+.tool.on{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:#fff;border-color:transparent;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 34%, transparent)}
+@media (max-width:700px){.tool{font-size:12.5px;padding:10px 15px}}
 .tool:active{transform:translateY(1px) scale(.98)}
 .page{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column}
 .page-hd{display:flex;align-items:center;gap:12px;padding:calc(11px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 11px calc(14px + env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--bg)}
@@ -314,6 +317,9 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .sb-hitmeta{font-family:var(--font-tel);font-size:11.5px;color:var(--ink-dim);margin-bottom:3px}
 .sb-hittxt{font-family:var(--font-tel);font-size:15px;line-height:1.7;color:var(--ink)}
 .sb-hittxt mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 2px}
+.egline{display:block;width:100%;margin-top:9px;text-align:left;font-family:var(--font-tel);font-size:13.5px;line-height:1.5;color:var(--ink-dim);background:var(--surface-2);border:1px dashed var(--line-strong);border-radius:11px;padding:9px 13px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:border-color .18s,color .18s}
+.egline:hover{border-color:var(--accent);color:var(--accent)}
+@media (max-width:700px){.egline{font-size:12.5px;padding:8px 11px}}
 .chipwrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .chipwrap button{font-family:var(--font-tel);font-size:12.5px;padding:8px 13px;border-radius:14px;
   border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
@@ -455,43 +461,64 @@ function connectScreen(u,k,msg,type){
 function startChat(){
   HISTORY=[];
   $('settings').style.display='none'; $('clear').style.display='inline-block';
-  $('tools').style.display='flex'; document.querySelectorAll('#tools .tool').forEach(function(b){ b.onclick=function(){ pageFor(b.getAttribute('data-page')); }; }); $('page-close').onclick=closePage;
+  $('tools').style.display='flex';
+  var _tc=document.querySelector('#tools .tool[data-page="chat"]'); if(_tc) _tc.classList.add('on');
+  document.querySelectorAll('#tools .tool').forEach(function(b){ b.onclick=function(){document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); });b.classList.add('on'); pageFor(b.getAttribute('data-page')); }; }); $('page-close').onclick=closePage;
   app.innerHTML =
     '<div class="chat"><div class="thread" id="thread">'+
       '<div class="empty" id="welcome">'+
         '<div class="om">॥</div>'+
         '<h2>నమస్కారం! తెలుగు సంప్రదాయ వ్యాకరణ అధ్యయనం ప్రారంభించండి.</h2>'+
         '<p>సంధి, సమాసము, కారకములు, వ్యాకరణ సూత్రములు — ఏదైనా అడగండి.</p>'+
-        '<div class="eg">'+
-        '<button>సంధి అంటే ఏమిటి?</button>'+
-        '<button>దానికి ఉదాహరణ చెప్పు</button>'+
-        '<button>కారకములు ఎన్ని రకములు?</button>'+
-        '<button>ఉకార సంధి గురించి పూర్తిగా తెలియజేయి</button>'+
-        '<button>ఇకార సంధి గురించి పూర్తిగా తెలియజేయి</button>'+
-        '<button>అపదాదిస్వర సంధి అంటే పూర్తిగా చెప్పు</button>'+
-        '<button>యడాగమం వచ్చే సమాచారం అంతా కావాలి</button>'+
-        '<button>సరళములు ఆదేశంగా వచ్చే సంధుల గురించి పూర్తిగా వివరించు</button>'+
-        '<button>కృతోత్కము, వ్యవస్థిత విభాష, అనుదంతము వంటి వాటిని పూర్తిగా వివరించు</button>'+
-        '<button>రామ ప్రాతిపదికగా వచ్చే అన్ని రూపాలను సూత్రం, ఉదాహరణలు, వ్యాఖ్యానంతో సహా తెలియజేయి. ఒక్కొక్క రూపానికి రూపసాధన చేస్తే ఎలా ఉంటుందో కూడా చూపించు.</button>'+
-        '<button>కర్మధారయ సమాసము గురించి పూర్తిగా వివరించు</button>'+
-        '<button>రామాశాస్త్రి పూర్తిగా వివరించు</button>'+
-        '<button>కృష్ణాశాస్త్రి సాధురూపమేనా తెలియజేయి</button>'+
-      '</div></div>'+
+      '</div>'+
     '</div></div>'+
     '<div class="composer"><div class="in">'+
       '<textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'+
       '<button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'+
-    '</div></div>';
+    '</div>'
+    '<button class="egline" id="egline" type="button"></button>'
+    '</div>';
   $('settings').onclick=()=>connectScreen(CFG.url,CFG.key,'');
   $('clear').onclick=()=>startChat();
   const q=$('q');
   q.addEventListener('input',()=>{ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,170)+'px'; });
   q.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
   $('send').onclick=function(){ send(); };
-  document.querySelectorAll('.eg button').forEach((b,i)=>{ b.style.animationDelay=(0.03*i)+'s'; b.onclick=()=>{ q.value=b.textContent; send(); }; });
+  startEgRotate(q);
   if(window.matchMedia('(pointer:fine)').matches) q.focus();
 }
 
+var EG_QS=[
+  'సంధి అంటే ఏమిటి? దానికి ఉదాహరణ చెప్పు',
+  'కారకములు ఎన్ని రకములు?',
+  'ఉకార సంధి గురించి పూర్తిగా తెలియజేయి',
+  'ఇకార సంధి గురించి పూర్తిగా తెలియజేయి',
+  'అపదాదిస్వర సంధి అంటే పూర్తిగా చెప్పు',
+  'యడాగమం వచ్చే సమాచారం అంతా కావాలి',
+  'సరళములు ఆదేశంగా వచ్చే సంధుల గురించి పూర్తిగా వివరించు',
+  'కృతోత్కము, వ్యవస్థిత విభాష, అనుదంతము వంటి వాటిని పూర్తిగా వివరించు',
+  'రామ ప్రాతిపదికగా వచ్చే అన్ని రూపాలను సూత్రం, ఉదాహరణలు, వ్యాఖ్యానంతో సహా తెలియజేయి',
+  'కర్మధారయ సమాసము గురించి పూర్తిగా వివరించు',
+  'రామాశాస్త్రి పూర్తిగా వివరించు',
+  'కృష్ణాశాస్త్రి సాధురూపమేనా తెలియజేయి'
+];
+var EG_T=null, EG_I=0;
+function startEgRotate(q){
+  if(EG_T){ clearInterval(EG_T); EG_T=null; }
+  if(!q) return;
+  var line=document.getElementById('egline');
+  var paint=function(){
+    var t=EG_QS[EG_I % EG_QS.length];
+    q.setAttribute('placeholder', t+'  →');
+    if(line){ line.textContent='ఉదాహరణ: '+t; line.title='నొక్కి వాడండి'; }
+  };
+  paint();
+  EG_T=setInterval(function(){ EG_I=(EG_I+1)%EG_QS.length; paint(); }, 4500);
+  if(line) line.onclick=function(){
+    q.value=EG_QS[EG_I % EG_QS.length];
+    q.focus(); q.dispatchEvent(new Event('input'));
+  };
+}
 function bubble(role, html, meta){
   const t=document.createElement('div'); t.className='turn '+role;
   let inner='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'ప్రశ్న:':'సమా.')+'</div><div class="bub">'+html;
@@ -548,7 +575,11 @@ function openPage(title, inner, ready){
   $('page-body').scrollTop=0;
   if(ready) ready();
 }
-function closePage(){ $('page').style.display='none'; }
+function closePage(){
+  $('page').style.display='none';
+  var t=document.querySelector('#tools .tool[data-page="chat"]');
+  if(t){ document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); }); t.classList.add('on'); }
+}
 
 
 function pageFor(name){
