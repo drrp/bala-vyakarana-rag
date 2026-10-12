@@ -120,8 +120,8 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .thread{max-width:840px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 .turn{display:flex;gap:12px;align-items:flex-start;animation:rise .45s var(--ease) both}
 .turn.user{flex-direction:row-reverse}
-.av{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;font-size:15px;
-  font-family:var(--font-tel);position:relative}
+.av{width:42px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;font-size:10.5px;line-height:1;
+  font-family:var(--font-tel);position:relative;letter-spacing:-.02em}
 .av.u{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-dim)}
 .av.a{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:#fff;
   box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 30%, transparent)}
@@ -489,7 +489,7 @@ function startChat(){
 
 function bubble(role, html, meta){
   const t=document.createElement('div'); t.className='turn '+role;
-  let inner='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'నే':'బా')+'</div><div class="bub">'+html;
+  let inner='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'ప్రశ్న:':'సమా.')+'</div><div class="bub">'+html;
   if(role==='assistant' && meta && meta.a){
     inner+='<div class="ans-actions"><button class="savebtn" type="button">☆ సేవ్</button><button class="copybtn" type="button">⧉ కాపీ</button></div>';
   }
@@ -513,7 +513,7 @@ async function send(override){
   thread.appendChild(bubble('user','<p>'+esc(shown)+'</p>'));
   HISTORY.push({role:'user', content:text});
   const load=document.createElement('div'); load.className='turn';
-  load.innerHTML='<div class="av a thinking">బా</div><div class="bub"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> ధారణ చేస్తోంది…</div></div>';
+  load.innerHTML='<div class="av a thinking">సమా.</div><div class="bub"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> ధారణ చేస్తోంది…</div></div>';
   thread.appendChild(load); load.scrollIntoView({behavior:'smooth',block:'end'});
   $('send').disabled=true;
   try{
@@ -756,6 +756,25 @@ function qzTableRows(ex){
   });
   return out;
 }
+function qzFormulas(ex){
+  var out=[];
+  if(!Array.isArray(ex)) return out;
+  ex.forEach(function(grp){
+    if(!Array.isArray(grp)) return;
+    var rws=Array.isArray(grp[0])?grp:[grp];
+    rws.forEach(function(r){
+      if(!Array.isArray(r)) return;
+      var c=r.map(tc);
+      var eq=c.indexOf('=');
+      if(eq<1) return;
+      var lhs=c.slice(0,eq).filter(function(x){ return x && x!=='+' && x!=='='; });
+      var rhs=c.slice(eq+1).join(' ').replace(/[.।]+$/,'').trim();
+      if(lhs.length<2 || !rhs) return;
+      out.push({a:lhs[0], b:lhs[1], r:rhs});
+    });
+  });
+  return out;
+}
 function qzNum(t){ return t.replace(/[।.]+$/,'').replace(/\s+/g,' ').trim(); }
 function qzStem(w){ return String(w||'').replace(/(ము|ంబు|ము\.)$/,''); }
 /* క్రియా: "వర్తమానంబున ల ట్టగు" -> "... లట్టు" so the లకారము is one token */
@@ -824,6 +843,7 @@ function qzExWords(it){
     });
   };
   qzTableRows(it.examples).forEach(function(r){ if(r.cells.length>=2) push(r.cells[1]); });
+  qzFormulas(it.examples).forEach(function(f){ push(f.r); });
   var ex=it.examples;
   if(Array.isArray(ex)) ex.forEach(function(grp){
     if(!Array.isArray(grp)) return;
@@ -840,7 +860,7 @@ function qzSig(q){ return q.kind+'|'+q.q+'|'+q.ans; }
 function qzBuild(fid, n){
   var items=SB.i.filter(function(x){ return x.type==='sutra' && (!fid || x.pariccheda_id===fid) && tc(x.text); });
   var allCh=SB.p.map(function(c){ return c.title_te||c.id; });
-  var pool={form:[], vib:[], lak:[], def:[], lang:[], ch:[]};
+  var pool={form:[], vib:[], lak:[], def:[], lang:[], sadhu:[], sutra:[]};
 
   /* 1. రూప నిర్ణయము — only from tables that actually carry a header, and
         worded from that header (no more assumed Sanskrit->Telugu mapping) */
@@ -902,17 +922,40 @@ function qzBuild(fid, n){
       opts:qzShuffle([o.term].concat(wrong)), ans:o.term, ref:o.ref});
   });
 
-  /* 6. పరిచ్ఛేద నిర్ణయము — capped so it never crowds out the rest */
-  var capCh=Math.max(1, Math.round(n*0.10));
-  qzShuffle(items.slice()).forEach(function(it){
-    if(pool.ch.length>=capCh) return;
-    var correct=qzTitle(it.pariccheda_id), wrong=qzPick(allCh,3,correct); if(wrong.length<3) return;
-    pool.ch.push({kind:'పరిచ్ఛేద నిర్ణయము', q:'‘'+tc(it.text)+'’ అను సూత్రము ఏ పరిచ్ఛేదమునకు చెందినది?',
-      opts:qzShuffle([correct].concat(wrong)), ans:correct, ref:it});
+  /* 6. రూప సాధన — from the corpus's own "X + Y = Z" rows: pick the right result */
+  var forms=[];
+  items.forEach(function(it){
+    qzFormulas(it.examples).forEach(function(f){ forms.push({f:f, ref:it}); });
+  });
+  var allRes=forms.map(function(o){ return o.f.r; });
+  qzShuffle(forms.slice()).forEach(function(o){
+    var wrong=qzPick(allRes,3,o.f.r);
+    wrong=wrong.filter(function(w){
+      return w!==o.f.r && o.f.r.indexOf(w)<0 && w.indexOf(o.f.r)<0 && w.split(/\s+/).length<=2;
+    });
+    if(wrong.length<3) return;
+    pool.sadhu.push({kind:'రూప సాధన', q:'‘'+o.f.a+'’ + ‘'+o.f.b+'’ = ?',
+      opts:qzShuffle([o.f.r].concat(wrong)), ans:o.f.r, ref:o.ref});
+  });
+
+  /* 7. సూత్రము — ఉదాహరణ : which example belongs to this sutra? */
+  var exSets=[];
+  items.forEach(function(it){
+    var w=qzExWords(it).filter(function(x){ return x.split(/\s+/).length<=2 && x.length>=2; });
+    if(w.length) exSets.push({it:it, words:w});
+  });
+  var allEx=[]; exSets.forEach(function(p){ p.words.forEach(function(w){ allEx.push(w); }); });
+  qzShuffle(exSets.slice()).forEach(function(p){
+    var ans=p.words[Math.floor(Math.random()*p.words.length)];
+    var others=allEx.filter(function(w){ return p.words.indexOf(w)<0; });
+    var wrong=qzPick(others,3,ans);
+    if(wrong.length<3) return;
+    pool.sutra.push({kind:'సూత్రము — ఉదాహరణ', q:'‘'+tc(p.it.text)+'’ అను సూత్రమునకు సరియైన ఉదాహరణ ఏది?',
+      opts:qzShuffle([ans].concat(wrong)), ans:ans, ref:p.it});
   });
 
   /* interleave so no single type dominates */
-  var order=['def','lang','vib','lak','form','ch'], out=[], guard=0;
+  var order=['sadhu','def','sutra','lang','vib','lak','form'], out=[], guard=0;
   while(out.length<n && guard++<20000){
     var added=false;
     for(var k=0;k<order.length && out.length<n;k++){ var p=pool[order[k]]; if(p.length){ out.push(p.shift()); added=true; } }
