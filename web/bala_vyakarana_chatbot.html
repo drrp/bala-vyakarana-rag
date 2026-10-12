@@ -923,7 +923,9 @@ function qzPick(pool, k, not){ var p=pool.filter(function(x){ return x!==not; })
 function qzTake(pool, k, not){ var out=[]; for(var i=0;i<pool.length && out.length<k;i++){ var x=pool[i]; if(x!==not && out.indexOf(x)<0) out.push(x); } return out; }
 function qzTitle(id){ var c=SB.p.filter(function(x){ return x.id===id; })[0]; return c?(c.title_te||c.id):''; }
 function qzRef(it){
+  if(!it) return '';
   var t=qzTitle(it.pariccheda_id), a=QZ_ABBR[t]||t, n=(it.sutra_number!=null)?it.sutra_number:'';
+  if(n==='') a=a.replace(/\s*సూ\.\s*$/,'');     // no sutra number -> drop the dangling "సూ."
   return ('బా.వ్యా. '+a+(n!==''?' '+n:'')).replace(/\s+/g,' ').trim();
 }
 /* example-table rows, each with its group's header row (so the question can be
@@ -1083,10 +1085,40 @@ function qzSeen(){ try{ var a=JSON.parse(localStorage.getItem(QZ_SEEN_KEY)||'[]'
 function qzSeenAdd(list){ try{ localStorage.setItem(QZ_SEEN_KEY, JSON.stringify(qzSeen().concat(list).slice(-3000))); }catch(e){} }
 function qzSig(q){ return q.kind+'|'+q.q+'|'+q.ans; }
 
+/* MCQs on సంజ్ఞలు written by the scholar. Kept verbatim — the options are given in
+   the order supplied and the quiz shuffles them at display time. `p`/`n` pin a
+   specific sutra where the question names one; otherwise the chapter is cited. */
+var QZ_CURATED=[
+ {q:'ద్రుతప్రకృతులు గాని శబ్దంబుల పేరేమి?', opts:['కళలు','ద్రుతములు','విభక్తులు','ధాతువులు'], ans:'కళలు'},
+ {q:'ద్రుతాంతములయిన పదములను ఏమందురు?', opts:['కళలు','ద్రుతప్రకృతికములు','సంబోధనలు','పుంపులు'], ans:'ద్రుతప్రకృతికములు'},
+ {q:'స్థానాది భేదములచే వ్యక్తముగా ధ్వనించునది ఏది?', opts:['వర్ణము','పదం','విభక్తి','ద్రుతము'], ans:'వర్ణము'},
+ {q:'వర్ణ్యంతేవ్య క్తంధ్వన్యంత ఇతి వర్ణాః అని పేర్కొన్నది ఏది?', opts:['భాషాప్ర','పాణినీయము','తైత్తి','అమర'], ans:'తైత్తి'},
+ {q:'మహేశ్వరుఁడు పాణినిమహర్షికిఁ బ్రసాదించిన సూత్రముల సంఖ్య ఎంత?', opts:['12','14','16','10'], ans:'14'},
+ {q:'మాహేశ్వర సూత్రముల యందలి తుదిహల్లుల నేమందురు?', opts:['ప్రత్యాహారములు','ఇద్వర్ణములు','అచ్చులు','హల్లులు'], ans:'ఇద్వర్ణములు'},
+ {q:'సూత్రములోని యే వర్ణమునైన ఇద్వర్ణముతో జోడించి వర్ణములను సంగ్రహించుటను ఏమందురు?', opts:['ప్రత్యాహారము','కళ','ద్రుతము','ఆదేశము'], ans:'ప్రత్యాహారము'},
+ {q:'‘చ’ అనునది ఏ స్థానమునకు చెందినది?', opts:['మూర్ధన్యము','తాలవ్యము','కంఠ్యము','దంత్యము'], ans:'తాలవ్యము'},
+ {q:'‘ట’ అనునది ఏ స్థానమునకు చెందినది?', opts:['మూర్ధన్యము','తాలవ్యము','కంఠ్యము','దంత్యము'], ans:'మూర్ధన్యము'},
+ {q:'వ్యాకరణ శాస్త్రమునకు విరుద్ధమయిన భాష ఏది?', opts:['సాంస్కృతికము','ఆచ్ఛికము','గ్రామ్యము','మిశ్రము'], ans:'గ్రామ్యము'},
+ {q:'వస్తాఁడు, తెస్తాఁడు అనునవి ఏ భాషకు ఉదాహరణలు?', opts:['గ్రామ్యము','తత్సమము','తద్భవము','ఆచ్ఛికము'], ans:'గ్రామ్యము'},
+ {q:'పారిభాషిక పదములు ప్రధానముగా ఎన్ని విధములు?', opts:['రెండు','మూడు','నాలుగు','ఐదు'], ans:'రెండు'},
+ {q:'లౌకికార్థమునకు భిన్నముగా నియమితార్థములలో వాడఁబడు శాస్త్రీయ సంజ్ఞలు ఏవి?', opts:['అకృత్రిమములు','కృత్రిమములు','విభక్తులు','ధాతువులు'], ans:'కృత్రిమములు'},
+ {q:'లౌకికార్థములందే వాడఁబడు శాస్త్రీయ సంజ్ఞలు ఏవి?', opts:['కృత్రిమములు','అకృత్రిమములు','ప్రత్యయములు','సంజ్ఞలు'], ans:'అకృత్రిమములు'},
+ {q:'‘ఆమ్రేడితం ద్విస్థిరుక్తమ్’ అనునది దేనికి ఉదాహరణ?', opts:['కృత్రిమ సంజ్ఞ','అకృత్రిమ సంజ్ఞ','గ్రామ్యము','విభక్తి'], ans:'కృత్రిమ సంజ్ఞ'},
+ {q:'ఆమంత్రణ శబ్దము తెనుఁగున ఏ సంజ్ఞ?', opts:['కృత్రిమ సంజ్ఞ','అకృత్రిమ సంజ్ఞ','ఉభయ సంజ్ఞ','నిత్య సంజ్ఞ'], ans:'అకృత్రిమ సంజ్ఞ'},
+ {q:'సంబుద్ధి శబ్దము తెనుఁగున ఏ సంజ్ఞ?', opts:['కృత్రిమ సంజ్ఞ','అకృత్రిమ సంజ్ఞ','లౌకిక సంజ్ఞ','ప్రత్యాహారము'], ans:'కృత్రిమ సంజ్ఞ'},
+ {q:'తత్సమ 21వ సూత్రమున ‘నామ’ మనఁగా నేమి?', opts:['సుబంతము','ప్రాతిపదికము','తిజంతము','కళ'], ans:'ప్రాతిపదికము', p:'tatsama', n:21},
+ {q:'సంధి 54వ సూత్రమున ‘నామ’ మనఁగా నేమి?', opts:['ప్రాతిపదికము','సుబంతము','కృత్రిమము','ధాతువు'], ans:'సుబంతము', p:'saMdhi', n:54},
+ {q:'శ ష స హ లకు వ్యాకరణములో గల సంజ్ఞ ఏది?', opts:['పరుషములు','సరళములు','ఊష్మములు','స్థిరములు'], ans:'ఊష్మములు'},
+ {q:'ఆ ఈ ఏ అను సర్వనామములకు గల సంజ్ఞ ఏది?', opts:['త్రికము','ముజ్జు','కళ','ద్రుతము'], ans:'త్రికము'},
+ {q:'మధ్యమపురుష ముడుజ్ వర్ణకములకు గల సంజ్ఞ ఏది?', opts:['త్రికము','ముజ్జు','ద్రుతము','కళ'], ans:'ముజ్జు'},
+ {q:'ద్రుతము మీఁది హల్లుతోఁ గూడుకొనుటను ఏమందురు?', opts:['సంశ్లేషము','ఆగమము','ఆదేశము','లోపము'], ans:'సంశ్లేషము'},
+ {q:'వర్ణాధిక్యమును ఏమందురు?', opts:['ఆదేశము','లోపము','ఆగమము','సంశ్లేషము'], ans:'ఆగమము'},
+ {q:'క్రియా వాచకమునకు గల సంజ్ఞ ఏది?', opts:['నామము','ధాతువు','విభక్తి','కళ'], ans:'ధాతువు'}
+];
 function qzBuild(fid, n){
   var items=SB.i.filter(function(x){ return x.type==='sutra' && (!fid || x.pariccheda_id===fid) && tc(x.text); });
   var allCh=SB.p.map(function(c){ return c.title_te||c.id; });
-  var pool={form:[], vib:[], lak:[], def:[], lang:[], sadhu:[], sutra:[]};
+  var pool={form:[], vib:[], lak:[], def:[], lang:[], sadhu:[], sutra:[], cur:[]};
 
   /* 1. రూప నిర్ణయము — only from tables that actually carry a header, and
         worded from that header (no more assumed Sanskrit->Telugu mapping) */
@@ -1272,8 +1304,20 @@ function qzBuild(fid, n){
       opts:qzShuffle([ans].concat(wrong)), ans:ans, ref:g.ref});
   });
 
+  /* 8. సంజ్ఞా నిర్ణయము — the scholar's own MCQs. These belong to the సంజ్ఞా
+        chapter, so they appear for the whole book or for సంజ్ఞా alone, never
+        inside a single other pariccheda. */
+  if(!fid || fid==='saMJNa'){
+    QZ_CURATED.forEach(function(c){
+      var ref=c.p ? {pariccheda_id:c.p, sutra_number:(c.n==null?null:c.n)}
+                  : {pariccheda_id:'saMJNa', sutra_number:null};
+      pool.cur.push({kind:'సంజ్ఞా నిర్ణయము', q:c.q, opts:qzShuffle(c.opts.slice()),
+        ans:c.ans, ref:ref});
+    });
+  }
+
   /* interleave so no single type dominates */
-  var order=['sadhu','def','sutra','lang','vib','lak','form'], out=[], guard=0;
+  var order=['cur','sadhu','def','sutra','lang','vib','lak','form'], out=[], guard=0;
   while(out.length<n && guard++<20000){
     var added=false;
     for(var k=0;k<order.length && out.length<n;k++){ var p=pool[order[k]]; if(p.length){ out.push(p.shift()); added=true; } }
