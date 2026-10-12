@@ -292,6 +292,10 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .qz-explain{font-family:var(--font-tel);font-size:15px;color:var(--ink);line-height:1.7;margin-bottom:4px}
 .qz-ref{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-dim);margin-bottom:12px}
 .qz-score{font-family:var(--font-tel);font-size:19px;text-align:center;padding:26px 12px;color:var(--accent);line-height:1.9}
+.gt-v{text-indent:0;white-space:normal;text-align:left;margin:14px 0;padding:12px 15px;border-left:3px solid var(--gold);background:var(--surface-2);border-radius:0 10px 10px 0;font-family:var(--font-tel);font-size:16.5px;line-height:2.0}
+.padyam .formatted,.padyam .orginal{font-family:var(--font-tel);line-height:2.0}
+.padyam .orginal{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);color:var(--ink-dim)}
+.padyam .chandassu{font-family:var(--font-tel-display);font-weight:600;color:var(--accent);margin-bottom:4px}
 .sb-search{margin:4px 0 16px}
 .sb-srow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .sb-search input{flex:1;font-family:var(--font-tel);font-size:14.5px;padding:9px 13px;border-radius:11px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink)}
@@ -576,7 +580,7 @@ function sbLoad(){
   if(SB.p.length) return Promise.resolve(SB);
   return Promise.all([
     sbGet('bala_vyakarana_paricchedas','select=id,ord,title_te&order=ord.asc'),
-    sbGet('bala_vyakarana_items','select=pariccheda_id,item_order,type,sutra_number,text,examples&order=pariccheda_id.asc,item_order.asc')
+    sbGet('bala_vyakarana_items','select=id,pariccheda_id,item_order,type,sutra_number,text,examples&order=pariccheda_id.asc,item_order.asc')
   ]).then(function(r){ SB.p=r[0]||[]; SB.i=r[1]||[]; return SB; });
 }
 function pageText(){ sbBook(); }
@@ -591,7 +595,7 @@ function sbBook(){
       + '</div>'
       + '<div id="sb-res"></div>'
       + '<p class="sh-sub">లేదా పరిచ్ఛేదము ఎంచుకోండి:</p><div class="chipwrap" id="sb-ch">'
-      + SB.p.map(function(c){ var n=SB.i.filter(function(x){return x.pariccheda_id===c.id;}).length;
+      + SB.p.map(function(c){ var n=SB.i.filter(function(x){return x.pariccheda_id===c.id && x.type==='sutra' && x.sutra_number!=null;}).length;
           return '<button data-id="'+esc(c.id)+'">'+esc(c.title_te||c.id)+' ('+n+')</button>'; }).join('') + '</div>';
     openPage(GT_BOOK.t, html, function(){
       document.querySelectorAll('#sb-ch button').forEach(function(b){ b.onclick=function(){ sbChapter(b.getAttribute('data-id'), 1); }; });
@@ -683,6 +687,7 @@ function sbChapter(id, page){
       var txt=tc(it.text);
       if(it.type==='sutra') return '<div class="sb-sutra"><span class="sb-txt">'+esc(txt)+'</span>'+(n!==''?'<span class="sb-num">'+n+'</span>':'')+'</div>'+exHtml(it.examples);
       if(it.type==='heading') return '<div class="gt-h">'+esc(txt)+'</div>'+exHtml(it.examples);
+      if(it.type==='verse') return '<div class="padyam gt-v" chandam="1" id="vs-'+esc(it.id)+'">'+esc(String(it.text==null?'':it.text).replace(/^[\s\n]+|[\s\n]+$/g,'')).replace(/\n/g,'<br>')+'</div>';
       return '<div class="gt-b">'+esc(txt)+'</div>'+exHtml(it.examples);
     }).join('');
     var title=esc(ch?(ch.title_te||ch.id):id);
@@ -703,6 +708,7 @@ function sbChapter(id, page){
       document.querySelectorAll('#page-body [data-go]').forEach(function(x){
         x.onclick=function(){ sbChapter(id, +x.getAttribute('data-go')); };
       });
+      document.querySelectorAll('#page-body .padyam').forEach(function(v){ beautifyVerse(v); });
     });
   });
 }
@@ -999,6 +1005,41 @@ function pageSaved(){
       el.querySelector('[data-act="expand"]').onclick=function(){ el.querySelector('.sa').classList.toggle('open'); };
       el.querySelector('[data-act="del"]').onclick=function(){ var a2=loadSaved(); a2.splice(i,1); storeSaved(a2); pageSaved(); };
     });
+  });
+}
+
+/* ===== chandam (ఛందం ©) : mark యతి / ప్రాస on padyams ===== */
+var CHANDAM_URL='https://chandamu.github.io/v1/js/chandam.te.min.js';
+var CHANDAM_CSS='https://chandamu.github.io/v1/css/chandam.api.css';
+var _chState=0, _chWait=[];   // 0=untried 1=loading 2=ready 3=failed
+function chandamReady(fn){
+  if(_chState===2){ fn(); return; }
+  if(_chState===3) return;
+  _chWait.push(fn);
+  if(_chState===1) return;
+  _chState=1;
+  try{
+    var l=document.createElement('link'); l.rel='stylesheet'; l.href=CHANDAM_CSS; document.head.appendChild(l);
+  }catch(e){}
+  var sc=document.createElement('script');
+  sc.src=CHANDAM_URL; sc.async=true;
+  sc.onload=function(){
+    window.onerror=null;                 // the library installs an alert() handler
+    _chState=(window.require?2:3);
+    var q=_chWait; _chWait=[];
+    if(_chState===2) q.forEach(function(f){ try{ f(); }catch(e){} });
+  };
+  sc.onerror=function(){ _chState=3; _chWait=[]; };
+  document.head.appendChild(sc);
+}
+function beautifyVerse(el){
+  if(!el || !el.id) return;
+  chandamReady(function(){
+    try{
+      window.require(['MiriyamAPI'], function(M){
+        try{ if(M && M.Worker && M.Worker.beautifyId) M.Worker.beautifyId(el.id); }catch(e){}
+      });
+    }catch(e){}
   });
 }
 
