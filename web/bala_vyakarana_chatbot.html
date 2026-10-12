@@ -919,6 +919,8 @@ var QZ_ABBR={
 };
 function qzShuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
 function qzPick(pool, k, not){ var p=pool.filter(function(x){ return x!==not; }); qzShuffle(p); var out=[]; for(var i=0;i<p.length && out.length<k;i++){ if(out.indexOf(p[i])===-1) out.push(p[i]); } return out; }
+/* like qzPick but keeps the given order — for candidates that are ranked */
+function qzTake(pool, k, not){ var out=[]; for(var i=0;i<pool.length && out.length<k;i++){ var x=pool[i]; if(x!==not && out.indexOf(x)<0) out.push(x); } return out; }
 function qzTitle(id){ var c=SB.p.filter(function(x){ return x.id===id; })[0]; return c?(c.title_te||c.id):''; }
 function qzRef(it){
   var t=qzTitle(it.pariccheda_id), a=QZ_ABBR[t]||t, n=(it.sutra_number!=null)?it.sutra_number:'';
@@ -965,6 +967,38 @@ function qzFormulas(ex){
 }
 function qzNum(t){ return t.replace(/[।.]+$/,'').replace(/\s+/g,' ').trim(); }
 function qzStem(w){ return String(w||'').replace(/(ము|ంబు|ము\.)$/,''); }
+/* Plausible mis-adaptations of the SAME Sanskrit word. The book's own tables show
+   which endings it plays with — the visarga kept or dropped (రామః/రాముఁడు, హరిః/హరి,
+   ధేనుః/ధేనువు) and the final vowel shifted (విద్యా/విద్య, పితా/పిత) — so a wrong
+   option can be a form of the same word instead of some unrelated word from the
+   next row. */
+function qzNearForms(q, ans){
+  var out=[], s=String(q==null?'':q).replace(/^[.\s]+|[.\s]+$/g,'');
+  if(!s || s.length<2) return out;
+  var add=function(x){ if(x && x!==ans && out.indexOf(x)<0) out.push(x); };
+  var VIS='\u0c03', MAT='\u0c3e\u0c3f\u0c40\u0c41\u0c42\u0c46\u0c47\u0c4a\u0c4b';
+  if(new RegExp('['+VIS+']$').test(s)){
+    var stem=s.replace(new RegExp('['+VIS+']$'),'');
+    add(stem);                                             // visarga simply dropped
+    /* which ending a word takes depends on how its stem ends: రామః->రాముఁడు
+       (consonant stem), ధేనుః->ధేనువు and భూః->భువి (vowel-sign stem) */
+    var ends=[], EM=new RegExp('['+MAT+']$').test(stem), EC=new RegExp('[\\u0c15-\\u0c39]$').test(stem);
+    if(EC) ends=['ుఁడు','ఁడు','ు','ము','వు','వి'];
+    else if(EM) ends=['వు','వి','ఁడు','ము'];
+    else ends=['ఁడు','ము'];
+    ends.forEach(function(e){ add(stem+e); });
+    add(s);                                                // Sanskrit ending left as it is
+  } else {
+    add(s+VIS);                                            // the Sanskrit ending carried over
+    add(s);                                                // left unadapted
+  }
+  var m=s.match(new RegExp('^(.*[\u0c15-\u0c39])(['+MAT+'])?$'));
+  /* a word ending in a virama takes a vowel in adaptation (హృద్ -> హృది), so its
+     variants are built on the bare stem */
+  if(/\u0c4d$/.test(s)) m=[null, s.replace(/\u0c4d$/,''), ''];
+  if(m){ var body=m[1], cur=m[2]||''; for(var i=0;i<MAT.length;i++){ if(MAT[i]!==cur) add(body+MAT[i]); } }
+  return out;
+}
 /* క్రియా: "వర్తమానంబున ల ట్టగు" -> "... లట్టు" so the లకారము is one token */
 function qzNormLak(t){
   return t.replace(/ల\s+ట్టు?గు/g,'లట్టు').replace(/లి\s+ట్టు?గు/g,'లిట్టు')
@@ -1068,11 +1102,16 @@ function qzBuild(fid, n){
     });
   });
   qzShuffle(pairs.slice()).forEach(function(p){
-    var same=pairs.filter(function(x){ return x.ref===p.ref && x.label===p.label; }).map(function(x){ return x.a; });
-    // distractors: the SAME ROW's other columns first (near-miss forms), then other
-    // rows of the same table and column. Nothing from another table.
-    var sibs=qzPick(p.sibs,3,p.a);
-    var wrong=sibs.concat(qzPick(same.filter(function(x){ return sibs.indexOf(x)<0; }),3-sibs.length,p.a));
+    /* A wrong option must be a form of the SAME word, or the answer gives itself away.
+       Take the row's own other columns first (సంస్కృతము · ప్రాకృతము · ప్రాకృతసమము),
+       then near-miss endings of the source word itself. An unrelated word from the
+       next row is only ever a last resort. */
+    var sibs=qzTake(p.sibs,3,p.a);
+    var near=qzNearForms(p.q, p.a);
+    /* three forms of the same word are required — a question is dropped rather than
+       padded with an unrelated word from the next row */
+    if(sibs.length+near.length<3) return;
+    var wrong=sibs.concat(qzTake(near,3-sibs.length,p.a));
     if(wrong.length<3) return;
     var hint=null;
     if(p.row && p.row.length>=2){
