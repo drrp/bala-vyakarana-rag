@@ -251,7 +251,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 :root[data-theme="dark"] .sb-sutra .sb-txt{color:#8ab4ff}
 .gt-pager{display:flex;justify-content:space-between;gap:10px;margin:28px 0 8px;padding-top:17px;border-top:1px solid var(--line)}
 .gt-chaps{display:flex;justify-content:space-between;align-items:stretch;gap:12px;margin:16px 0 34px;flex-wrap:wrap}
-.chapbadge{display:flex;flex-direction:column;gap:3px;text-align:left;max-width:48%;font-family:var(--font-tel);padding:10px 16px;border-radius:12px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:var(--shadow-1);transition:transform .16s var(--ease),border-color .18s,box-shadow .18s,background .18s}
+.chapbadge{display:flex;flex-direction:column;gap:4px;text-align:left;max-width:48%;font-family:var(--font-tel);padding:12px 18px;border-radius:12px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;box-shadow:var(--shadow-1);transition:transform .16s var(--ease),border-color .18s,box-shadow .18s,background .18s}
 .chapbadge.next{margin-left:auto;text-align:right;align-items:flex-end}
 .chapbadge:hover{background:var(--surface-2);border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-2)}
 .chapbadge:active{transform:translateY(0) scale(.99)}
@@ -763,9 +763,9 @@ function sbChapter(id, page){
     var nextC=(ix>=0 && ix<SB.p.length-1)?SB.p[ix+1]:null;
     var html='<div class="gt-bar"><button class="pback" id="sb-back">← పరిచ్ఛేదములు</button>'
       + '<span class="gt-tools">'
-      + (page>1 ? '<button class="pback" data-go="'+(page-1)+'">‹</button>' : '')
+      + '<button class="pback" data-go="'+(page-1)+'"'+(page>1?'':' disabled')+' aria-label="మునుపటి పుట">‹</button>'
       + '<span class="gt-count">పుట '+page+' / '+total+'</span>'
-      + (page<total ? '<button class="pback" data-go="'+(page+1)+'">›</button>' : '')
+      + '<button class="pback" data-go="'+(page+1)+'"'+(page<total?'':' disabled')+' aria-label="తర్వాతి పుట">›</button>'
       + '</span></div>'
       + '<div class="gt-head">'+title+'</div>'
       + '<div class="gt-body">'+body+'</div>'
