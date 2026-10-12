@@ -1128,26 +1128,71 @@ function qzBuild(fid, n){
       opts:qzShuffle([o.term].concat(wrong)), ans:o.term, ref:o.ref});
   });
 
-  /* 6. రూప సాధన — from the corpus's own "X + Y = Z" rows: pick the right result */
+  /* 6. రూప సాధన — from the corpus's own "X + Y = Z" rows: pick the right result.
+        A wrong option must look as though it could have come from the SAME two
+        words — otherwise the answer is obvious at a glance, because the right
+        option is the only one containing the question's words. So the near-misses
+        are taken first from real rows that reuse one of the two words, and then
+        from the junction variants the book itself uses elsewhere: the optional
+        య āgama (ఏమంటివి / ఏమియంటివి, దూతయితఁడు), and the two words written
+        together with no sandhi applied at all. */
   var forms=[];
   items.forEach(function(it){
     qzFormulas(it.examples).forEach(function(f){ forms.push({f:f, ref:it}); });
   });
+  var QZ_MATRA=/^[\u0c3e-\u0c4c\u0c55\u0c56]/;
+  var qzFld=function(x){ return String(x==null?'':x).replace(/[.।]+$/,'').replace(/^\s+|\s+$/g,''); };
+  var qzBase=function(x){ return qzFld(x).replace(/[\u200c\u200d]+$/,'').replace(/\u0c4d$/,''); };
   qzShuffle(forms.slice()).forEach(function(o){
-    /* distractors are other real results, the same pariccheda first, so a wrong
-       option is a form the book actually derives — just not from this rule */
-    var sameRes=[], otherRes=[];
+    var a=qzFld(o.f.a), b=qzFld(o.f.b);
+    var parts=qzFld(o.f.r).split(/\s*,\s*/).filter(function(x){ return x; });
+    if(!a || !b || !parts.length) return;
+    /* the book often gives alternatives (ఏమంటివి, ఏమియంటివి). Any of them is a
+       correct answer, so take the first and make sure the rest can never be
+       offered as a distractor. */
+    var ans=parts[0], alsoOk=parts.slice(1);
+    if(a.split(/\s+/).length>2 || b.split(/\s+/).length>2 || ans.split(/\s+/).length>2) return;
+    var nearA=[], nearB=[], sutraMates=[], chapter=[];
     forms.forEach(function(x){
-      var r=x.f.r;
-      if(x.ref===o.ref || r===o.f.r) return;
-      if(r.split(/\s+/).length>2 || o.f.r.indexOf(r)>=0 || r.indexOf(o.f.r)>=0) return;
-      (x.ref.pariccheda_id===o.ref.pariccheda_id ? sameRes : otherRes).push(r);
+      var xp=qzFld(x.f.r).split(/\s*,\s*/).filter(function(y){ return y; });
+      if(!xp.length || x.ref===o.ref) return;
+      for(var q=0;q<xp.length;q++){ if(xp[q]===ans || alsoOk.indexOf(xp[q])>=0) return; }
+      var r=xp[0];
+      if(r===ans || r.split(/\s+/).length>2) return;
+      if(ans.indexOf(r)>=0 || r.indexOf(ans)>=0) return;
+      if(x.f.a===o.f.a)      nearA.push(r);               // same first word, different partner
+      else if(x.f.b===o.f.b) nearB.push(r);               // same second word, different partner
+      else if(x.ref.id===o.ref.id) sutraMates.push(r);
+      else if(x.ref.pariccheda_id===o.ref.pariccheda_id) chapter.push(r);
     });
-    var wrong=qzPick(sameRes,3,o.f.r);
-    if(wrong.length<3) wrong=wrong.concat(qzPick(otherRes,3-wrong.length,o.f.r));
+    var mech=[], ab=qzBase(a), jn=ab+qzBase(b);
+    if(jn && jn!==ans) mech.push(jn);                     // sandhi not applied at all
+    /* the optional య āgama the book uses both ways (ఏమంటివి / ఏమియంటివి): toggle it
+       at the junction of the answer, located by the part of the first word that
+       survives unchanged */
+    var pre=0, an=String(ans);
+    while(pre<ab.length && pre<an.length && ab.charAt(pre)===an.charAt(pre)) pre++;
+    var head=an.slice(0,pre), tail=an.slice(pre);
+    var ag;
+    if(tail.charAt(0)==='య'){
+      var rest=tail.slice(1);
+      /* dropping the āgama must not leave a vowel sign with no consonant to sit on */
+      ag = QZ_MATRA.test(rest) ? '' : head+rest;
+    } else {
+      ag = head+'య'+tail;
+    }
+    if(ag && ag!==ans && mech.indexOf(ag)<0) mech.push(ag);
+    /* at least two of the three wrong options must be built from the question's
+       own words, or the answer gives itself away */
+    if(nearA.length+nearB.length+mech.length<2) return;
+    var wrong=qzPick(nearA,3,ans);
+    if(wrong.length<3) wrong=wrong.concat(qzPick(nearB,3-wrong.length,ans));
+    if(wrong.length<3) wrong=wrong.concat(qzPick(mech,3-wrong.length,ans));
+    if(wrong.length<3) wrong=wrong.concat(qzPick(sutraMates,3-wrong.length,ans));
+    if(wrong.length<3) wrong=wrong.concat(qzPick(chapter,3-wrong.length,ans));
     if(wrong.length<3) return;
-    pool.sadhu.push({kind:'రూప సాధన', q:'‘'+o.f.a+'’ + ‘'+o.f.b+'’ = ?',
-      opts:qzShuffle([o.f.r].concat(wrong)), ans:o.f.r, ref:o.ref});
+    pool.sadhu.push({kind:'రూప సాధన', q:'‘'+a+'’ + ‘'+b+'’ = ?',
+      opts:qzShuffle([ans].concat(wrong)), ans:ans, ref:o.ref});
   });
 
   /* 7. సూత్రము — ఉదాహరణ : which of these is a real example of this sutra?
