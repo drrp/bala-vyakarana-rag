@@ -728,25 +728,28 @@ function qzRef(it){
   var t=qzTitle(it.pariccheda_id), a=QZ_ABBR[t]||t, n=(it.sutra_number!=null)?it.sutra_number:'';
   return ('బా.వ్యా. '+a+(n!==''?' '+n:'')).replace(/\s+/g,' ').trim();
 }
-/* rows of a 2+ column example table (header and formula rows excluded) */
+/* example-table rows, each with its group's header row (so the question can be
+   worded from the header instead of assuming a Sanskrit->Telugu mapping) */
 function qzTableRows(ex){
   var out=[];
   if(!Array.isArray(ex)) return out;
   ex.forEach(function(grp){
     if(!Array.isArray(grp)) return;
     var rws=Array.isArray(grp[0])?grp:[grp];
-    rws.forEach(function(r){
+    var head=null;
+    rws.forEach(function(r,i){
       if(!Array.isArray(r)) return;
       var c=r.map(tc), f=c.filter(function(x){ return x!==''; });
+      if(i===0 && f.length>=2 && /సంస్కృతము|ప్రాకృతము/.test(c[0])){ head=c; return; }
       if(f.length<2) return;
       if(c.some(function(x){ return x==='+'||x==='='; })) return;
-      if(/సంస్కృతము|ప్రాకృతము/.test(c[0])) return;
-      out.push(c);
+      out.push({cells:c, head:head});
     });
   });
   return out;
 }
 function qzNum(t){ return t.replace(/[।.]+$/,'').replace(/\s+/g,' ').trim(); }
+function qzStem(w){ return String(w||'').replace(/(ము|ంబు|ము\.)$/,''); }
 /* క్రియా: "వర్తమానంబున ల ట్టగు" -> "... లట్టు" so the లకారము is one token */
 function qzNormLak(t){
   return t.replace(/ల\s+ట్టు?గు/g,'లట్టు').replace(/లి\s+ట్టు?గు/g,'లిట్టు')
@@ -756,6 +759,7 @@ function qzNormLak(t){
 var QZ_VIB=['ప్రథమ','ద్వితీయ','తృతీయ','చతుర్థి','పంచమి','షష్ఠి','సప్తమి'];
 var QZ_VIB_FIX={'బ్రథమ':'ప్రథమ','బ్రద్వితీయ':'ద్వితీయ','బ్రతృతీయ':'తృతీయ'};
 var QZ_LAK=['లట్టు','లిట్టు','లృట్టు','లాట్టు','లూట్టు','లఙి'];
+var QZ_LANG=['తత్సమంబు','తద్భవంబు','దేశ్యంబు','గ్రామ్యంబు'];
 /* words that name a category, exactly as the sutra writes them */
 var QZ_TERMS=['తత్సమంబు','తద్భవంబు','దేశ్యంబు','గ్రామ్యంబు','గ్రాహ్యంబు','స్థిరములు',
  'ద్రుతంబు','ద్రుతప్రకృతికములు','సమాసంబు','త్రికంబు','యచ్చ','ముత్తు','మహత్తు','కళ',
@@ -802,30 +806,56 @@ function qzLak(t){
   if(!QZ_KALA.test(subj)) return null;
   return {marker:subj, lak:hit};
 }
+/* every word a sutra offers as an example, flattened out of its tables/lists */
+function qzExWords(it){
+  var out=[];
+  var push=function(s){
+    String(s||'').split(/[,;]/).forEach(function(p){
+      var t=tc(p).replace(/[.।]+$/,'').trim();
+      if(t && t.split(/\s+/).length<=2 && t.length>=2) out.push(t);
+    });
+  };
+  qzTableRows(it.examples).forEach(function(r){ if(r.cells.length>=2) push(r.cells[1]); });
+  var ex=it.examples;
+  if(Array.isArray(ex)) ex.forEach(function(grp){
+    if(!Array.isArray(grp)) return;
+    var rws=Array.isArray(grp[0])?grp:[grp];
+    rws.forEach(function(r){ if(Array.isArray(r) && r.length===1) push(r[0]); });
+  });
+  return out;
+}
+var QZ_SEEN_KEY='bala_quiz_seen_v1';
+function qzSeen(){ try{ var a=JSON.parse(localStorage.getItem(QZ_SEEN_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function qzSeenAdd(list){ try{ localStorage.setItem(QZ_SEEN_KEY, JSON.stringify(qzSeen().concat(list).slice(-3000))); }catch(e){} }
+function qzSig(q){ return q.kind+'|'+q.q+'|'+q.ans; }
+
 function qzBuild(fid, n){
   var items=SB.i.filter(function(x){ return x.type==='sutra' && (!fid || x.pariccheda_id===fid) && tc(x.text); });
   var allCh=SB.p.map(function(c){ return c.title_te||c.id; });
-  var pool={form:[], vib:[], def:[], lak:[], ch:[]};
+  var pool={form:[], vib:[], lak:[], def:[], lang:[], ch:[]};
 
-  /* 1. రూప నిర్ణయము — from the example tables */
+  /* 1. రూప నిర్ణయము — only from tables that actually carry a header, and
+        worded from that header (no more assumed Sanskrit->Telugu mapping) */
   var pairs=[];
   items.forEach(function(it){
-    qzTableRows(it.examples).forEach(function(c){
-      if(c.length>=2 && c[0] && c[1] && c[1].indexOf(',')<0 && c[1].split(/\s+/).length===1)
-        pairs.push({q:c[0], a:c[1], ref:it});
+    qzTableRows(it.examples).forEach(function(r){
+      if(!r.head || r.cells.length<2) return;
+      var col=r.cells.length-1, ans=r.cells[col];
+      if(!r.cells[0] || !ans) return;
+      if(ans.indexOf(',')>=0 || ans.split(/\s+/).length>1) return;
+      pairs.push({q:r.cells[0], a:ans, src:r.head[0]||'', label:r.head[col]||r.head[r.head.length-1], ref:it});
     });
   });
-  var allForms=pairs.map(function(p){ return p.a; });
   qzShuffle(pairs.slice()).forEach(function(p){
-    var same=pairs.filter(function(x){ return x.ref===p.ref; }).map(function(x){ return x.a; });
+    var same=pairs.filter(function(x){ return x.ref===p.ref && x.label===p.label; }).map(function(x){ return x.a; });
     var wrong=qzPick(same,3,p.a);
-    if(wrong.length<3) wrong=wrong.concat(qzPick(allForms,3-wrong.length,p.a));
     if(wrong.length<3) return;
-    pool.form.push({kind:'రూప నిర్ణయము', q:'‘'+p.q+'’ అను సంస్కృత పదమునకు తెలుగు రూపము ఏది?',
+    pool.form.push({kind:'రూప నిర్ణయము',
+      q:'‘'+p.q+'’ అను '+qzStem(p.src)+' పదమునకు '+qzStem(p.label)+' రూపము ఏది?',
       opts:qzShuffle([p.a].concat(wrong)), ans:p.a, ref:p.ref});
   });
 
-  /* 2. విభక్తి — marker -> case (డు-ము-వు-లు ప్రథమ / కర్మంబున ద్వితీయ …) */
+  /* 2. విభక్తి — marker -> case */
   items.forEach(function(it){
     var v=qzVib(qzNum(tc(it.text))); if(!v) return;
     var wrong=qzPick(QZ_VIB,3,v.vib); if(wrong.length<3) return;
@@ -833,7 +863,7 @@ function qzBuild(fid, n){
       opts:qzShuffle([v.vib].concat(wrong)), ans:v.vib, ref:it});
   });
 
-  /* 3. లకారము — కాలము -> లకారము (వర్తమానంబున లట్టు …) */
+  /* 3. లకారము — కాలము -> లకారము */
   items.forEach(function(it){
     var v=qzLak(qzNormLak(qzNum(tc(it.text)))); if(!v) return;
     var wrong=qzPick(QZ_LAK,3,v.lak); if(wrong.length<3) return;
@@ -841,7 +871,7 @@ function qzBuild(fid, n){
       opts:qzShuffle([v.lak].concat(wrong)), ans:v.lak, ref:it});
   });
 
-  /* 4. నిర్వచనము -> సంజ్ఞ (technical terms) */
+  /* 4. నిర్వచనము -> పదము */
   var defs=[];
   items.forEach(function(it){ var d=qzDefTerm(qzNum(tc(it.text))); if(d && d.stem.split(/\s+/).length>=2) defs.push({d:d, ref:it}); });
   var allTerms=defs.map(function(o){ return o.d.term; });
@@ -851,21 +881,52 @@ function qzBuild(fid, n){
       opts:qzShuffle([o.d.term].concat(wrong)), ans:o.d.term, ref:o.ref});
   });
 
-  /* 5. పరిచ్ఛేద నిర్ణయము */
+  /* 5. భాషా నిర్ణయము — an example word -> తత్సమ / తద్భవ / దేశ్య / గ్రామ్య */
+  var langs=[];
+  items.forEach(function(it){
+    var d=qzDefTerm(qzNum(tc(it.text)));
+    if(!d || QZ_LANG.indexOf(d.term)<0) return;
+    qzExWords(it).forEach(function(w){ langs.push({w:w, term:d.term, ref:it}); });
+  });
+  qzShuffle(langs.slice()).forEach(function(o){
+    var wrong=qzPick(QZ_LANG,3,o.term); if(wrong.length<3) return;
+    pool.lang.push({kind:'భాషా నిర్ణయము', q:'‘'+o.w+'’ అను పదము ఏ భాష?',
+      opts:qzShuffle([o.term].concat(wrong)), ans:o.term, ref:o.ref});
+  });
+
+  /* 6. పరిచ్ఛేద నిర్ణయము — capped so it never crowds out the rest */
+  var capCh=Math.max(1, Math.round(n*0.25));
   qzShuffle(items.slice()).forEach(function(it){
+    if(pool.ch.length>=capCh) return;
     var correct=qzTitle(it.pariccheda_id), wrong=qzPick(allCh,3,correct); if(wrong.length<3) return;
     pool.ch.push({kind:'పరిచ్ఛేద నిర్ణయము', q:'‘'+tc(it.text)+'’ అను సూత్రము ఏ పరిచ్ఛేదమునకు చెందినది?',
       opts:qzShuffle([correct].concat(wrong)), ans:correct, ref:it});
   });
 
-  /* interleave the pools so no single type dominates */
-  var order=['def','vib','lak','form','ch'], out=[], guard=0;
-  while(out.length<n && guard++<5000){
+  /* interleave so no single type dominates */
+  var order=['def','lang','vib','lak','form','ch'], out=[], guard=0;
+  while(out.length<n && guard++<20000){
     var added=false;
     for(var k=0;k<order.length && out.length<n;k++){ var p=pool[order[k]]; if(p.length){ out.push(p.shift()); added=true; } }
     if(!added) break;
   }
-  return qzShuffle(out);
+
+  /* never show the same question twice — not within a quiz, not across them */
+  var seen={}, seenArr=qzSeen();
+  seenArr.forEach(function(k){ seen[k]=1; });
+  var fresh=[];
+  qzShuffle(out).forEach(function(q){
+    var sig=qzSig(q);
+    if(seen[sig]) return;      // asked before
+    if(fresh.some(function(x){ return qzSig(x)===sig; })) return;  // asked earlier this quiz
+    seen[sig]=1; fresh.push(q);
+  });
+  if(!fresh.length){
+    try{ localStorage.removeItem(QZ_SEEN_KEY); }catch(e){}
+    return qzShuffle(out);
+  }
+  qzSeenAdd(fresh.map(qzSig));
+  return fresh;
 }
 function pageQuiz(){
   openPage('క్విజ్','<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> తెస్తోంది…</div>');
@@ -873,12 +934,12 @@ function pageQuiz(){
     var opts='<option value="">అన్ని పరిచ్ఛేదములు</option>'+SB.p.map(function(c){ return '<option value="'+esc(c.id)+'">'+esc(c.title_te||c.id)+'</option>'; }).join('');
     var html='<div class="sb-search">'
       +'<div class="sb-srow"><select id="qz-ch">'+opts+'</select><select id="qz-n">'
-      +'<option value="10">10 ప్రశ్నలు</option><option value="15">15 ప్రశ్నలు</option><option value="20">20 ప్రశ్నలు</option></select>'
+      +'<option value="20">20 ప్రశ్నలు</option><option value="30">30 ప్రశ్నలు</option><option value="50">50 ప్రశ్నలు</option><option value="100">100 ప్రశ్నలు</option></select>'
       +'<button id="qz-go">ప్రారంభించు</button></div></div>'
       +'<p class="sh-sub">గ్రంథము నుండి స్వయంగా తయారగు ప్రశ్నలు — సూత్రములు, ఉదాహరణలు, పరిచ్ఛేదములు. సమాధానము నొక్కగానే సరి/తప్పు తెలియును.</p>'
       +'<div id="qz-body"></div>';
     openPage('క్విజ్', html, function(){
-      $('qz-go').onclick=function(){ qzStart($('qz-ch').value, Number($('qz-n').value)||10); };
+      $('qz-go').onclick=function(){ qzStart($('qz-ch').value, Number($('qz-n').value)||20); };
     });
   }).catch(function(e){ openPage('క్విజ్','<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
 }
