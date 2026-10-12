@@ -356,7 +356,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <button class="tool" data-page="chat">సంభాషణ</button>
   <button class="tool" data-page="saved">సేవ్</button>
   <button class="tool" data-page="text">గ్రంథము</button>
-  <button class="tool" data-page="quiz">క్విజ్</button>
+  <button class="tool" data-page="quiz">పరీక్షణ</button>
 </nav>
 <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
 <div id="page" class="page" style="display:none"><div class="page-hd"><button class="pback" id="page-close">← సంభాషణ</button><h2 id="page-title"></h2></div><div class="page-body" id="page-body"></div></div>
@@ -513,7 +513,7 @@ async function send(override){
   thread.appendChild(bubble('user','<p>'+esc(shown)+'</p>'));
   HISTORY.push({role:'user', content:text});
   const load=document.createElement('div'); load.className='turn';
-  load.innerHTML='<div class="av a thinking">బా</div><div class="bub"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> thinking…</div></div>';
+  load.innerHTML='<div class="av a thinking">బా</div><div class="bub"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> ధారణ చేస్తోంది…</div></div>';
   thread.appendChild(load); load.scrollIntoView({behavior:'smooth',block:'end'});
   $('send').disabled=true;
   try{
@@ -581,7 +581,9 @@ function sbLoad(){
   return Promise.all([
     sbGet('bala_vyakarana_paricchedas','select=id,ord,title_te&order=ord.asc'),
     sbGet('bala_vyakarana_items','select=id,pariccheda_id,item_order,type,sutra_number,text,examples&order=pariccheda_id.asc,item_order.asc')
-  ]).then(function(r){ SB.p=r[0]||[]; SB.i=r[1]||[]; return SB; });
+  ]).then(function(r){
+    SB.p=(r[0]||[]).filter(function(c){ return c.ord!==1 && c.title_te!=='పీఠిక'; });
+    SB.i=r[1]||[]; return SB; });
 }
 function pageText(){ sbBook(); }
 function normTe(s){ return String(s==null?'':s).replace(/[ఁం\u200c\u200d]/g,'').replace(/\s+/g,' ').trim(); }
@@ -901,7 +903,7 @@ function qzBuild(fid, n){
   });
 
   /* 6. పరిచ్ఛేద నిర్ణయము — capped so it never crowds out the rest */
-  var capCh=Math.max(1, Math.round(n*0.25));
+  var capCh=Math.max(1, Math.round(n*0.10));
   qzShuffle(items.slice()).forEach(function(it){
     if(pool.ch.length>=capCh) return;
     var correct=qzTitle(it.pariccheda_id), wrong=qzPick(allCh,3,correct); if(wrong.length<3) return;
@@ -935,7 +937,7 @@ function qzBuild(fid, n){
   return fresh;
 }
 function pageQuiz(){
-  openPage('క్విజ్','<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> తెస్తోంది…</div>');
+  openPage('పరీక్షణ','<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> తెస్తోంది…</div>');
   sbLoad().then(function(){
     var opts='<option value="">అన్ని పరిచ్ఛేదములు</option>'+SB.p.map(function(c){ return '<option value="'+esc(c.id)+'">'+esc(c.title_te||c.id)+'</option>'; }).join('');
     var html='<div class="sb-search">'
@@ -944,10 +946,10 @@ function pageQuiz(){
       +'<button id="qz-go">ప్రారంభించు</button></div></div>'
       +'<p class="sh-sub">గ్రంథము నుండి స్వయంగా తయారగు ప్రశ్నలు — సూత్రములు, ఉదాహరణలు, పరిచ్ఛేదములు. సమాధానము నొక్కగానే సరి/తప్పు తెలియును.</p>'
       +'<div id="qz-body"></div>';
-    openPage('క్విజ్', html, function(){
+    openPage('పరీక్షణ', html, function(){
       $('qz-go').onclick=function(){ qzStart($('qz-ch').value, Number($('qz-n').value)||20); };
     });
-  }).catch(function(e){ openPage('క్విజ్','<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
+  }).catch(function(e){ openPage('పరీక్షణ','<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
 }
 function qzStart(fid, n){
   var qs=qzBuild(fid, n), b=$('qz-body');
