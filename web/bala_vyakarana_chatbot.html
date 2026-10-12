@@ -318,9 +318,9 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .sb-hittxt{font-family:var(--font-tel);font-size:15px;line-height:1.7;color:var(--ink)}
 .sb-hittxt mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 2px}
 .vwrap{display:flex;flex-direction:column;gap:16px;align-items:center;margin:4px 0 22px}
-.vbox{font-family:var(--font-tel);font-size:13.5px;line-height:1.9;text-align:center;color:var(--accent);max-width:660px;text-wrap:balance}
+.vbox{font-family:var(--font-tel);font-size:13.5px;line-height:1.95;text-align:center;color:var(--accent);max-width:760px;padding-left:2.2em;text-indent:-2.2em}
 .vbox .vh{font-family:var(--font-tel-display);font-weight:700;color:var(--gold);margin-right:4px}
-.vbox .vr{display:block;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);margin-top:4px;letter-spacing:.02em}
+.vbox .vr{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:.02em;white-space:nowrap}
 :root[data-theme="dark"] .vbox{color:var(--accent-2)}
 @media (max-width:700px){.vbox{font-size:12.5px;line-height:1.85}}
 .egline{display:block;width:100%;margin-top:9px;text-align:left;font-family:var(--font-tel);font-size:13.5px;line-height:1.5;color:var(--ink-dim);background:var(--surface-2);border:1px dashed var(--line-strong);border-radius:11px;padding:9px 13px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:border-color .18s,color .18s}
@@ -475,16 +475,12 @@ function startChat(){
       '<div class="empty" id="welcome">'+
         '<div class="vwrap">'+
           '<div class="vbox">'+
-            '<span class="vh">కం.</span>  శ్రీలతకుం బ్రాఁకయి వృష<br>'+
-            'శైలంబున వెలసి తనదు చాయ కెలయు ధ<br>'+
-            'న్యాళి దగ మాన్చి కోర్కులు<br>'+
-            'చాలంగా నొసఁగు కల్పసాలముఁ గొలుతున్.<span class="vr">(బా. వ్యా. అవ.)</span>'+
+            '<span class="vh">కం.</span>   శ్రీలతకుం బ్రాఁకయి వృషశైలంబున వెలసి తనదు చాయ కెలయు ధ<br>'+
+            'న్యాళి దగ మాన్చి కోర్కులు  చాలంగా నొసఁగు కల్పసాలముఁ గొలుతున్. <span class="vr">(బా. వ్యా. అవ.)</span>'+
           '</div>'+
           '<div class="vbox">'+
-            '<span class="vh">కం.</span>  సత్యము శ్రేయము జనులకు<br>'+
-            'సత్యము దక్కొండు లేదు సద్ధర్మమదే<br>'+
-            'యత్యలఘు తపః ఫలమిడు<br>'+
-            'నిత్యతఁ బాటిల్లు దాన నిఖిలార్ధంబుల్.<span class="vr">(ప్రౌ. వ్యా. అవ.)</span>'+
+            '<span class="vh">కం.</span>   సత్యము శ్రేయము జనులకు సత్యము దక్కొండు లేదు సద్ధర్మమదే<br>'+
+            'యత్యలఘు తపః ఫలమిడు నిత్యతఁ బాటిల్లు దాన నిఖిలార్ధంబుల్. <span class="vr">(ప్రౌ. వ్యా. అవ.)</span>'+
           '</div>'+
         '</div>'+
         '<h2>నమస్కారం! తెలుగు సంప్రదాయ వ్యాకరణాధ్యయనాన్ని ప్రారంభించండి.</h2>'+
