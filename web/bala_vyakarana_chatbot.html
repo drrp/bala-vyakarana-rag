@@ -244,6 +244,13 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .sb-num{position:absolute;top:10px;right:12px;font-family:var(--font-mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);border-radius:999px;padding:3px 9px;line-height:1.4}
 :root[data-theme="dark"] .sb-sutra{background:color-mix(in srgb,var(--accent) 7%,var(--surface-2));box-shadow:0 1px 2px rgba(0,0,0,.25),0 12px 30px -20px color-mix(in srgb,var(--accent) 70%,transparent)}
 .sb-exs{margin:0 0 18px;padding:0 0 0 20px}
+.sb-vyakhya{margin:0 0 20px 20px;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-left:3px solid color-mix(in srgb,var(--gold) 55%,transparent);border-radius:0 var(--r-sm) var(--r-sm) 0}
+.sb-vyakhya:empty{display:none;margin:0;padding:0;border:0}
+.sb-vyakhya .vy-h{font-family:var(--font-tel-display);font-size:13px;letter-spacing:.05em;color:var(--gold);margin:0 0 8px}
+.sb-vyakhya .vy-item{margin:0 0 11px}
+.sb-vyakhya .vy-item:last-child{margin-bottom:0}
+.sb-vyakhya .vy-ref{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.03em;color:var(--ink-faint);margin:0 0 3px}
+.sb-vyakhya .vy-txt{font-family:var(--font-tel);font-size:15.5px;line-height:1.85;color:var(--ink-dim);text-align:justify;text-justify:inter-word}
 .sb-tblwrap{overflow-x:auto;margin:8px 0 10px;border:1px solid var(--line);border-radius:10px}
 .sb-tbl{width:100%;border-collapse:collapse;font-family:var(--font-tel);font-size:15px;background:var(--surface)}
 .sb-tbl th{font-family:var(--font-tel-display);font-weight:600;font-size:13px;color:var(--accent);text-align:left;padding:7px 10px;border-bottom:1.5px solid var(--line-strong);background:var(--surface-2);white-space:nowrap}
@@ -849,6 +856,41 @@ function sbAudioList(){
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
 }
+/* Commentary for the sutras on screen, from the ఘంటాపథము books. The link is
+   inferred from the text (see bala_vyakarana_sutra_commentary); a failure here must
+   never break the page, so everything is swallowed. */
+function sbVyakhya(items){
+  var ids=(items||[]).filter(function(x){return x.type==='sutra';}).map(function(x){return x.id;});
+  if(!ids.length) return;
+  sbGet('bala_vyakarana_sutra_commentary',
+        'select=item_id,doc,ref,probe_len,excerpt&item_id=in.('+ids.join(',')+')')
+    .then(function(rows){
+      if(!rows||!rows.length) return;
+      var byItem={};
+      rows.forEach(function(r){ (byItem[r.item_id]=byItem[r.item_id]||[]).push(r); });
+      Object.keys(byItem).forEach(function(k){
+        var host=document.querySelector('.sb-vyakhya[data-item="'+k+'"]');
+        if(!host) return;
+        var seen={}, list=[];
+        byItem[k].forEach(function(r){
+          var key=r.doc+'|'+r.ref;
+          if(seen[key]) return; seen[key]=1; list.push(r);
+        });
+        list.sort(function(a,b){                       // బాల. first, then ప్రౌ., then by page
+          var ab=/బాల/.test(a.doc)?0:1, bb=/బాల/.test(b.doc)?0:1;
+          if(ab!==bb) return ab-bb;
+          return (parseInt(String(a.ref).replace(/\D/g,''),10)||0)-(parseInt(String(b.ref).replace(/\D/g,''),10)||0);
+        });
+        host.innerHTML='<div class="vy-h">వ్యాఖ్యానము</div>'+list.map(function(r){
+          var book=/బాల/.test(r.doc)?'బాల.':'ప్రౌ.';
+          var t=String(r.excerpt||'').replace(/\s+/g,' ').trim();
+          return '<div class="vy-item"><div class="vy-ref">'+esc(book+' '+(r.ref||''))+'</div>'
+               + '<div class="vy-txt">'+esc(t)+'</div></div>';
+        }).join('');
+      });
+    })
+    .catch(function(){});
+}
 function sbChapter(id, page){
   sbLoad().then(function(){
     var ch=SB.p.filter(function(c){return c.id===id;})[0];
@@ -861,7 +903,8 @@ function sbChapter(id, page){
       var txt=tc(it.text);
       if(it.type==='sutra') return '<div class="sb-sutra">'
         + '<button class="sb-play" data-a="'+esc(sbAudioKey(it))+'">'+SB_ICON_PLAY+'</button>'
-        + '<span class="sb-txt">'+esc(txt)+'</span>'+(n!==''?'<span class="sb-num">'+n+'</span>':'')+'</div>'+exHtml(it.examples);
+        + '<span class="sb-txt">'+esc(txt)+'</span>'+(n!==''?'<span class="sb-num">'+n+'</span>':'')+'</div>'+exHtml(it.examples)
+        + '<div class="sb-vyakhya" data-item="'+esc(it.id)+'"></div>';
       if(it.type==='heading') return '<div class="gt-h">'+esc(txt)+'</div>'+exHtml(it.examples);
       if(it.type==='verse') return '<div class="padyam gt-v" chandam="1" id="vs-'+esc(it.id)+'">'+esc(String(it.text==null?'':it.text).replace(/^[\s\n]+|[\s\n]+$/g,'')).replace(/\n/g,'<br>')+'</div>';
       return '<div class="gt-b">'+esc(txt)+'</div>'+exHtml(it.examples);
@@ -899,6 +942,7 @@ function sbChapter(id, page){
       });
       document.querySelectorAll('#page-body .padyam').forEach(function(v){ beautifyVerse(v); });
       sbAudioWire();
+      sbVyakhya(slice);
     });
   });
 }
