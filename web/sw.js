@@ -1,6 +1,6 @@
 // Offline shell for the బాల వ్యాకరణము app.
 // Caches this origin's own files only — Supabase / Gemini / font CDNs always go to the network.
-const CACHE = "bala-vyakarana-v47";
+const CACHE = "bala-vyakarana-v48";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest", "./pwa.js", "./config.js",
   "./bala_vyakarana_chatbot.html",

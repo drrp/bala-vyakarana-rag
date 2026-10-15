@@ -26,6 +26,37 @@
   --ring:0 0 0 3px var(--accent-soft);
   --ease:cubic-bezier(.22,.75,.25,1);
 }
+/* ---- optional palettes, chosen from the nav ---- */
+:root[data-theme="sepia"]{color-scheme:light;
+  --bg:#f6ecd8;--bg-2:#efe2c6;--surface:#fffaf0;--surface-2:#f7edd9;--surface-3:#efe2c8;
+  --line:rgba(90,64,30,.16);--line-strong:rgba(90,64,30,.32);
+  --ink:#33270f;--ink-dim:#6d5c3c;--ink-faint:#9c8a66;
+  --accent:#8a5a12;--accent-2:#a97218;--accent-soft:#f2e2c2;--gold:#8a5a12;--gold-soft:#f0e0bc}
+:root[data-theme="midnight"]{color-scheme:dark;
+  --bg:#0e1420;--bg-2:#131b2a;--surface:#182131;--surface-2:#1e2940;--surface-3:#243049;
+  --line:rgba(255,255,255,.10);--line-strong:rgba(255,255,255,.22);
+  --ink:#e8eefb;--ink-dim:#a8b6cf;--ink-faint:#7d8ba5;
+  --accent:#5b8cff;--accent-2:#7aa2ff;--accent-soft:#1c2b4d;--gold:#c8a44a;--gold-soft:#2a2410}
+:root[data-theme="forest"]{color-scheme:dark;
+  --bg:#0f1712;--bg-2:#141f18;--surface:#182620;--surface-2:#1e2f27;--surface-3:#25382e;
+  --line:rgba(255,255,255,.10);--line-strong:rgba(255,255,255,.22);
+  --ink:#e6f0e8;--ink-dim:#a6bda9;--ink-faint:#7b9481;
+  --accent:#4fae72;--accent-2:#6cc48c;--accent-soft:#1b3326;--gold:#cbb45f;--gold-soft:#2a2a14}
+:root[data-theme="plum"]{color-scheme:dark;
+  --bg:#160f1c;--bg-2:#1d1426;--surface:#221830;--surface-2:#2a1e3b;--surface-3:#332447;
+  --line:rgba(255,255,255,.10);--line-strong:rgba(255,255,255,.22);
+  --ink:#f0e8f8;--ink-dim:#bfaed4;--ink-faint:#9482ab;
+  --accent:#b06cf0;--accent-2:#c48cff;--accent-soft:#2c1c40;--gold:#d9b45f;--gold-soft:#2d2413}
+:root[data-theme="slate"]{color-scheme:light;
+  --bg:#eef0f2;--bg-2:#e5e8ec;--surface:#ffffff;--surface-2:#f4f6f8;--surface-3:#e9ecef;
+  --line:rgba(30,40,55,.14);--line-strong:rgba(30,40,55,.28);
+  --ink:#1c232c;--ink-dim:#55606d;--ink-faint:#8b95a1;
+  --accent:#2f5d8a;--accent-2:#3f77ad;--accent-soft:#dde8f3;--gold:#8a6a1f;--gold-soft:#f0e6c8}
+:root[data-theme="contrast"]{color-scheme:light;
+  --bg:#ffffff;--bg-2:#f2f2f2;--surface:#ffffff;--surface-2:#f7f7f7;--surface-3:#ededed;
+  --line:rgba(0,0,0,.35);--line-strong:rgba(0,0,0,.60);
+  --ink:#000000;--ink-dim:#1a1a1a;--ink-faint:#3d3d3d;
+  --accent:#000000;--accent-2:#333333;--accent-soft:#e6e6e6;--gold:#4a3a00;--gold-soft:#efe9d2}
 :root[data-theme="dark"]{color-scheme:dark;
   --bg:#15110b; --bg-2:#1b150d;
   --surface:#211a12; --surface-2:#2a2218; --surface-3:#332a1d;
@@ -230,7 +261,13 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .who{display:flex;align-items:center;gap:9px;margin-left:4px}
 .who-pic{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--line-strong);background:var(--surface-2)}
 .who-name{font-family:var(--font-tel);font-size:13.5px;color:var(--ink);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fsz{display:inline-flex;gap:5px;align-items:center}
+.navtools{display:inline-flex;gap:6px;align-items:center;margin-left:auto}
+.themepop{position:fixed;z-index:60;background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-2);padding:8px;display:flex;flex-direction:column;gap:2px;min-width:200px}
+.thm{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:9px;cursor:pointer;font-family:var(--font-tel);font-size:13.5px;color:var(--ink)}
+.thm:hover{background:var(--surface-2)}
+.thm.on{background:var(--accent-soft)}
+.thm .sw{width:20px;height:20px;border-radius:6px;border:1px solid var(--line-strong);flex:none}
+.thm .tick{margin-left:auto;color:var(--accent);font-size:12px}
 .fsbtn{font-family:var(--font-tel-display);font-size:13px;line-height:1;padding:7px 9px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
 .fsbtn:hover{border-color:var(--accent)}
 .fsbtn:disabled{opacity:.4;cursor:default}
@@ -241,7 +278,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   .quota{font-size:11px;padding:2px 8px}
   .turn{gap:8px}
   .bub{max-width:96%;padding:14px 15px;border-radius:14px}
-  .bub p{font-size:clamp(14.5px,3.9vw,16.5px);line-height:1.82;margin-bottom:11px}
+  .bub p{font-size:calc(clamp(14.5px,3.9vw,16.5px) * var(--fscale));line-height:1.82;margin-bottom:11px}
   #app{overflow-y:auto;-webkit-overflow-scrolling:touch}
   .chat>.thread{padding:14px 0 4px}
   .landing-cta{padding:2px 16px calc(22px + env(safe-area-inset-bottom))}
@@ -454,7 +491,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="సంప్రదాయ వ్యాకరణ">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>(function(){try{var t=localStorage.getItem('bala_theme');try{var _f=Number(localStorage.getItem('bala_fscale'))||1;if(_f<0.85)_f=0.85;if(_f>1.35)_f=1.35;document.documentElement.style.setProperty('--fscale',_f.toFixed(2));}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
+<script>(function(){try{var t=localStorage.getItem('bala_theme');try{var _f=Number(localStorage.getItem('bala_fscale'))||1;if(_f<0.85)_f=0.85;if(_f>1.35)_f=1.35;document.documentElement.style.setProperty('--fscale',_f.toFixed(2));}catch(e){}var _ok=['light','dark','sepia','midnight','forest','plum','slate','contrast'];document.documentElement.setAttribute('data-theme',_ok.indexOf(t)>=0?t:'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
 <link rel="icon" href="icons/icon-192.png">
 <script src="pwa.js" defer></script>
 <script src="config.js"></script>
@@ -475,11 +512,6 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
       <span id="quota" class="quota" title="వాడిన ప్రశ్నలు / మొత్తం పరిమితి"></span>
     </div>
     <button class="btn" id="logout" style="display:none" title="నిష్క్రమించు">నిష్క్రమించు</button>
-    <span class="fsz">
-      <button class="fsbtn" id="fs-dec" type="button" title="అక్షరము చిన్నదిగా" aria-label="Smaller text">అ−</button>
-      <button class="fsbtn" id="fs-inc" type="button" title="అక్షరము పెద్దదిగా" aria-label="Larger text">అ+</button>
-    </span>
-    <button class="btn" id="themebtn" title="రంగు మార్చు" aria-label="Theme">☾</button>
     <button class="btn" id="settings" style="display:none">Connection</button>
     <button class="btn" id="clear" style="display:none">New chat</button>
   </div>
@@ -490,7 +522,13 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <button class="tool" data-page="text">గ్రంథము</button>
   <button class="tool" data-page="quiz">పరీక్షణ</button>
   <button class="tool" data-page="dashboard">డాష్‌బోర్డ్</button>
+  <span class="navtools">
+    <button class="fsbtn" id="fs-dec" type="button" title="అక్షరము చిన్నదిగా" aria-label="Smaller text">అ−</button>
+    <button class="fsbtn" id="fs-inc" type="button" title="అక్షరము పెద్దదిగా" aria-label="Larger text">అ+</button>
+    <button class="fsbtn" id="themebtn" type="button" title="రంగు ఎంచుకోండి" aria-label="Theme">🎨</button>
+  </span>
 </nav>
+<div id="themepop" class="themepop" style="display:none"></div>
 <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
 <div id="page" class="page" style="display:none"><div class="page-hd"><button class="pback" id="page-close">← స్వాగతం</button><h2 id="page-title"></h2></div><div class="page-body" id="page-body"></div></div>
 <footer class="foot">
@@ -498,7 +536,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v47</span>
+  <span id="buildtag">build v48</span>
 </footer>
 
 <script>
@@ -1573,21 +1611,61 @@ function beautifyVerse(el){
   });
 }
 
-/* ===== theme toggle ===== */
+/* ===== theme picker ===== */
+var THEMES=[['light','వెలుతురు','#f3ebdb','#a8401a'],['dark','చీకటి','#1b150d','#e8a87c'],
+ ['sepia','పాత కాగితం','#f6ecd8','#8a5a12'],['midnight','అర్ధరాత్రి','#0e1420','#5b8cff'],
+ ['forest','అడవి','#0f1712','#4fae72'],['plum','ప్లమ్','#160f1c','#b06cf0'],
+ ['slate','స్లేట్','#eef0f2','#2f5d8a'],['contrast','అధిక వ్యత్యాసం','#ffffff','#000000']];
+var THEME_NAMES=THEMES.map(function(t){ return t[0]; });
+function currentTheme(){
+  var t=document.documentElement.getAttribute('data-theme')||'light';
+  return THEME_NAMES.indexOf(t)>=0 ? t : 'light';
+}
+function setTheme(t){
+  if(THEME_NAMES.indexOf(t)<0) t='light';
+  document.documentElement.setAttribute('data-theme',t);
+  try{ localStorage.setItem('bala_theme',t); }catch(e){}
+  var m=document.querySelector('meta[name="theme-color"]');
+  if(m){
+    var dark=['dark','midnight','forest','plum'].indexOf(t)>=0;
+    m.setAttribute('content', dark ? '#141019' : '#a8401a');
+  }
+  var b=$('themebtn'); if(b) b.title='రంగు: '+t;
+  buildThemePop();
+}
+function buildThemePop(){
+  var pop=$('themepop'); if(!pop) return;
+  var cur=currentTheme();
+  pop.innerHTML=THEMES.map(function(th){
+    return '<button class="thm'+(th[0]===cur?' on':'')+'" type="button" data-th="'+th[0]+'">'
+         + '<span class="sw" style="background:'+th[2]+';border-color:'+th[3]+'"></span>'
+         + '<span>'+esc(th[1])+'</span>'
+         + '<span class="tick">'+(th[0]===cur?'\u2713':'')+'</span></button>';
+  }).join('');
+  pop.querySelectorAll('.thm').forEach(function(b){
+    b.onclick=function(){ setTheme(b.getAttribute('data-th')); pop.style.display='none'; };
+  });
+}
+function openThemePop(){
+  var pop=$('themepop'), btn=$('themebtn');
+  if(!pop||!btn) return;
+  buildThemePop();
+  var r=btn.getBoundingClientRect();
+  pop.style.top=(r.bottom+6)+'px';
+  pop.style.right=Math.max(10, window.innerWidth-r.right)+'px';
+  pop.style.left='auto';
+  pop.style.display='flex';
+}
 (function(){
-  var b=document.getElementById('themebtn');
-  if(!b) return;
-  var apply=function(t){
-    t=(t==='dark')?'dark':'light';
-    document.documentElement.setAttribute('data-theme',t);
-    try{ localStorage.setItem('bala_theme',t); }catch(e){}
-    b.textContent = (t==='dark') ? '\u2600' : '\u263e';
-    b.title = (t==='dark') ? 'వెలుతురు రంగు' : 'చీకటి రంగు';
-    var m=document.querySelector('meta[name="theme-color"]');
-    if(m) m.setAttribute('content', (t==='dark') ? '#1b150d' : '#a8401a');
-  };
-  apply(document.documentElement.getAttribute('data-theme'));
-  b.onclick=function(){ apply(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); };
+  var b=$('themebtn');
+  if(b) b.onclick=function(e){ e.stopPropagation(); openThemePop(); };
+  document.addEventListener('click',function(e){
+    var pop=$('themepop'), btn=$('themebtn');
+    if(!pop || pop.style.display==='none') return;
+    if((btn && btn.contains(e.target)) || pop.contains(e.target)) return;
+    pop.style.display='none';
+  });
+  setTheme(currentTheme());
 })();
 
 /* ===== study layer ===== */
