@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Mandali&family=Mallanna&family=Ramabhadra&family=NTR&family=Noto+Serif+Telugu:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:light;
+:root{--fscale:1;color-scheme:light;
   --bg:#f3ebdb; --bg-2:#ece1cc;
   --surface:#fffdf7; --surface-2:#f7f0e1; --surface-3:#efe6d3;
   --line:rgba(74,52,28,.15); --line-strong:rgba(74,52,28,.30);
@@ -130,7 +130,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   box-shadow:var(--shadow-1);max-width:min(720px,88%);position:relative}
 .turn.assistant .bub{border-left:4px solid color-mix(in srgb,var(--accent) 62%, transparent)}
 .turn.user .bub{background:linear-gradient(180deg,var(--accent-soft),color-mix(in srgb,var(--accent-soft) 72%, var(--surface)));border-color:transparent}
-.bub p{margin:0 0 13px;font-family:var(--font-tel);font-size:clamp(15.5px,1.05vw + 12px,17.5px);line-height:1.9;overflow-wrap:break-word}
+.bub p{margin:0 0 13px;font-family:var(--font-tel);font-size:calc(clamp(15.5px,1.05vw + 12px,17.5px) * var(--fscale));line-height:1.9;overflow-wrap:break-word}
 .bub > :last-child{margin-bottom:0}
 .bub .hd{font-family:var(--font-tel-display);font-weight:700;color:var(--accent);margin:24px 0 11px;line-height:1.5;
   position:relative;padding-left:17px}
@@ -219,7 +219,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .gate-btn:disabled{opacity:.6;cursor:default}
 .gate-err{font-family:var(--font-tel);font-size:13px;color:#c0392b;margin:14px 0 0;min-height:18px}
 .dash-wrap{overflow-x:auto;margin:6px 0 10px}
-.dash{border-collapse:collapse;font-family:var(--font-tel);font-size:15.5px}
+.dash{border-collapse:collapse;font-family:var(--font-tel);font-size:calc(15.5px * var(--fscale))}
 .dash th,.dash td{border:1px solid var(--line);padding:7px 12px;text-align:center}
 .dash thead th{font-family:var(--font-tel-display);color:var(--gold);font-weight:600}
 .dash tbody th{text-align:left;color:var(--ink);font-weight:600;white-space:nowrap}
@@ -230,6 +230,10 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .who{display:flex;align-items:center;gap:9px;margin-left:4px}
 .who-pic{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--line-strong);background:var(--surface-2)}
 .who-name{font-family:var(--font-tel);font-size:13.5px;color:var(--ink);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsz{display:inline-flex;gap:5px;align-items:center}
+.fsbtn{font-family:var(--font-tel-display);font-size:13px;line-height:1;padding:7px 9px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+.fsbtn:hover{border-color:var(--accent)}
+.fsbtn:disabled{opacity:.4;cursor:default}
 .quota{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;color:var(--ink-dim);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap}
 .quota.full{color:#c0392b;border-color:color-mix(in srgb,#c0392b 40%,transparent)}
 @media (max-width:700px){
@@ -279,7 +283,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .gt-tools .pback:active{transform:none}
 .gt-count{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);padding:0 12px;min-width:96px;text-align:center;letter-spacing:.02em}
 .gt-head{font-family:var(--font-tel-display);font-weight:600;font-size:17.5px;color:var(--accent);text-align:center;letter-spacing:.015em;margin-top:0;margin-bottom:22px;padding-bottom:12px;border-bottom:1px solid var(--line)}
-.gt-body{font-family:var(--font-tel);font-size:19px;line-height:1.95;color:var(--ink);text-align:justify;text-justify:inter-word;margin-top:0;margin-bottom:0}
+.gt-body{font-family:var(--font-tel);font-size:calc(19px * var(--fscale));line-height:1.95;color:var(--ink);text-align:justify;text-justify:inter-word;margin-top:0;margin-bottom:0}
 .gt-b{margin:0 0 3px;text-indent:1.6em;white-space:pre-wrap}
 .gt-h{font-family:var(--font-tel-display);font-weight:600;font-size:17px;color:var(--accent);text-align:center;text-indent:0;margin:22px 0 10px;white-space:pre-wrap}
 .gt-quote{text-indent:0;margin:7px 0;padding:13px 17px;background:var(--surface-2);border-left:3px solid var(--gold);border-radius:0 10px 10px 0}
@@ -288,10 +292,10 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .gt-num{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);vertical-align:super}
 .sb-sutra{position:relative;text-indent:0;margin:24px 0 13px;padding:20px 54px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:14px;text-align:center;box-shadow:0 1px 2px rgba(28,22,12,.04),0 10px 26px -18px color-mix(in srgb,var(--accent) 55%,transparent)}
 .sb-sutra::before{content:"";position:absolute;left:16px;right:16px;top:0;height:2px;border-radius:0 0 2px 2px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 55%,transparent),transparent)}
-.sb-sutra .sb-txt{font-family:var(--font-tel);font-size:19.5px;color:#1d4ed8;line-height:1.9;letter-spacing:.004em}
+.sb-sutra .sb-txt{font-family:var(--font-tel);font-size:calc(19.5px * var(--fscale));color:#1d4ed8;line-height:1.9;letter-spacing:.004em}
 .sb-num{position:absolute;top:10px;right:12px;font-family:var(--font-mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);border-radius:999px;padding:3px 9px;line-height:1.4}
 :root[data-theme="dark"] .sb-sutra{background:color-mix(in srgb,var(--accent) 7%,var(--surface-2));box-shadow:0 1px 2px rgba(0,0,0,.25),0 12px 30px -20px color-mix(in srgb,var(--accent) 70%,transparent)}
-.sb-exs{margin:0 0 18px;padding:0 0 0 20px;font-size:18.5px}
+.sb-exs{margin:0 0 18px;padding:0 0 0 20px;font-size:calc(18.5px * var(--fscale))}
 .sb-tblwrap{overflow-x:auto;margin:8px 0 10px;border:1px solid var(--line);border-radius:10px}
 .sb-tbl{width:100%;border-collapse:collapse;font-family:var(--font-tel);font-size:15px;background:var(--surface)}
 .sb-tbl th{font-family:var(--font-tel-display);font-weight:600;font-size:13px;color:var(--accent);text-align:left;padding:7px 10px;border-bottom:1.5px solid var(--line-strong);background:var(--surface-2);white-space:nowrap}
@@ -450,7 +454,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="సంప్రదాయ వ్యాకరణ">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>(function(){try{var t=localStorage.getItem('bala_theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
+<script>(function(){try{var t=localStorage.getItem('bala_theme');try{var _f=Number(localStorage.getItem('bala_fscale'))||1;if(_f<0.85)_f=0.85;if(_f>1.35)_f=1.35;document.documentElement.style.setProperty('--fscale',_f.toFixed(2));}catch(e){}document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
 <link rel="icon" href="icons/icon-192.png">
 <script src="pwa.js" defer></script>
 <script src="config.js"></script>
@@ -471,6 +475,10 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
       <span id="quota" class="quota" title="వాడిన ప్రశ్నలు / మొత్తం పరిమితి"></span>
     </div>
     <button class="btn" id="logout" style="display:none" title="నిష్క్రమించు">నిష్క్రమించు</button>
+    <span class="fsz">
+      <button class="fsbtn" id="fs-dec" type="button" title="అక్షరము చిన్నదిగా" aria-label="Smaller text">అ−</button>
+      <button class="fsbtn" id="fs-inc" type="button" title="అక్షరము పెద్దదిగా" aria-label="Larger text">అ+</button>
+    </span>
     <button class="btn" id="themebtn" title="రంగు మార్చు" aria-label="Theme">☾</button>
     <button class="btn" id="settings" style="display:none">Connection</button>
     <button class="btn" id="clear" style="display:none">New chat</button>
@@ -490,7 +498,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v46</span>
+  <span id="buildtag">build v47</span>
 </footer>
 
 <script>
@@ -1620,6 +1628,30 @@ function niceErr(m){
   if(/duplicate key/i.test(m)) return 'ఇది ఇప్పటికే ఉంది.';
   return m;
 }
+/* ---- reader type scale (అ− / అ+) ---- */
+var FS_KEY='bala_fscale', FS_MIN=0.85, FS_MAX=1.35, FS_STEP=0.1;
+function applyFs(v, save){
+  var f=Number(v);
+  if(!isFinite(f)) f=1;
+  f=Math.min(FS_MAX, Math.max(FS_MIN, f));
+  document.documentElement.style.setProperty('--fscale', f.toFixed(2));
+  if(save){ try{ localStorage.setItem(FS_KEY, f.toFixed(2)); }catch(e){} }
+  var d=$('fs-dec'), i=$('fs-inc');
+  if(d) d.disabled = f <= FS_MIN + 0.001;
+  if(i) i.disabled = f >= FS_MAX - 0.001;
+  return f;
+}
+function currentFs(){
+  var v=1;
+  try{ v=Number(localStorage.getItem(FS_KEY)) || 1; }catch(e){}
+  return Math.min(FS_MAX, Math.max(FS_MIN, v));
+}
+function initFs(){
+  var f=applyFs(currentFs(), false);
+  var d=$('fs-dec'), i=$('fs-inc');
+  if(d) d.onclick=function(){ applyFs(currentFs() - FS_STEP, true); };
+  if(i) i.onclick=function(){ applyFs(currentFs() + FS_STEP, true); };
+}
 function setHdrVar(){
   var h=document.querySelector('header.top');
   if(h) document.documentElement.style.setProperty('--hdr', h.offsetHeight+'px');
@@ -1882,7 +1914,7 @@ function pageDashboard(){
     if(!(u&&k)){ connectScreen(u||'', k||'', 'Connection details were not found \u2014 enter the project URL and key to continue.'); return; }
     CFG={url:u,key:k};
     authBoot().then(function(ok){
-      if(ok){ startChat(); applyPerms(); applyHome(); setHdrVar(); }
+      if(ok){ initFs(); startChat(); applyPerms(); applyHome(); setHdrVar(); }
       window.addEventListener('resize', setHdrVar);
     });
   }
