@@ -234,6 +234,9 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .u-mail{font-size:12.5px;color:var(--ink-dim);word-break:break-all}
 .dash select{font-family:var(--font-tel);font-size:13px;padding:5px 8px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
 .dash .sect{font-family:var(--font-tel-display);font-size:15px;color:var(--ink);margin:22px 0 6px}
+.invite-form{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:4px 0 8px}
+.invite-form input{font-family:var(--font-tel);font-size:13.5px;padding:8px 12px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);min-width:230px}
+.invite-form select{font-family:var(--font-tel);font-size:13.5px;padding:8px 10px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
 .page{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column}
 .page-hd{display:flex;align-items:center;gap:12px;padding:calc(11px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 11px calc(14px + env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--bg)}
 .page-hd h2{margin:0;font-family:var(--font-tel-display);font-size:17px}
@@ -529,7 +532,7 @@ function startChat(){
   $('settings').style.display='none'; $('clear').style.display='inline-block';
   $('tools').style.display='flex';
   var _tc=document.querySelector('#tools .tool[data-page="chat"]'); if(_tc) _tc.classList.add('on');
-  document.querySelectorAll('#tools .tool').forEach(function(b){ b.onclick=function(){document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); });b.classList.add('on'); pageFor(b.getAttribute('data-page')); }; }); $('page-close').onclick=closePage;
+  document.querySelectorAll('#tools .tool').forEach(function(b){ b.onclick=function(){document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); });b.classList.add('on'); pageFor(b.getAttribute('data-page')); }; }); $('page-close').onclick=goHome;
   app.innerHTML =
     '<div class="chat"><div class="thread" id="thread">'+
       '<div class="empty" id="welcome">'+
@@ -1565,6 +1568,15 @@ function fillWho(){
   if(w) w.style.display='flex';
   if(lo) lo.style.display='inline-block';
 }
+/* Where the app opens. If chat is not permitted for this role, the chat view is
+   hidden entirely and గ్రంథము becomes the home page instead. */
+function goHome(){ if(AUTH.allowed['chat']) closePage(); else pageFor('text'); }
+function applyHome(){
+  var chatOK=!!AUTH.allowed['chat'];
+  var a=$('app'); if(a) a.style.display = chatOK ? '' : 'none';
+  var pc=$('page-close'); if(pc) pc.style.display = chatOK ? '' : 'none';
+  if(!chatOK) pageFor('text');
+}
 function applyPerms(){
   document.querySelectorAll('#tools .tool').forEach(function(b){
     b.style.display=AUTH.allowed[b.getAttribute('data-page')]?'':'none';
@@ -1600,9 +1612,11 @@ function pageDashboard(){
     AUTH.sb.from('app_roles').select('key,label,sort_order').order('sort_order'),
     AUTH.sb.from('app_pages').select('key,label,sort_order').order('sort_order'),
     AUTH.sb.from('app_role_pages').select('role_key,page_key,allowed'),
-    AUTH.sb.from('app_users').select('user_id,email,name,picture,role_key,is_active,last_login').order('created_at')
+    AUTH.sb.from('app_users').select('user_id,email,name,picture,role_key,is_active,last_login').order('created_at'),
+    AUTH.sb.from('app_invites').select('email,role_key').order('created_at')
   ]).then(function(res){
-    var roles=res[0].data||[], pages=res[1].data||[], mat=res[2].data||[], users=res[3].data||[];
+    var roles=res[0].data||[], pages=res[1].data||[], mat=res[2].data||[], users=res[3].data||[], invites=res[4].data||[];
+    function roleLabel(k){ for(var i=0;i<roles.length;i++) if(roles[i].key===k) return roles[i].label; return k; }
     var look={}; mat.forEach(function(m){ look[m.role_key+'|'+m.page_key]=m.allowed; });
     var html='<p class="sh-sub">పాత్రల ఆధారముగా ఏ పేజీలు కనిపించాలో టిక్ చేయండి. మార్పు వెంటనే సేవ్ అగును.</p>'
       +'<div class="dash-wrap"><table class="dash"><thead><tr><th>పాత్ర</th>'
@@ -1627,7 +1641,20 @@ function pageDashboard(){
             +'<td><input type="checkbox" data-active="'+esc(u.user_id)+'"'+(u.is_active?' checked':'')+'></td>'
             +'</tr>';
         }).join('') : '<tr><td colspan="4" class="dash-note">ఇంకా ఎవరూ ప్రవేశించలేదు.</td></tr>')
-      +'</tbody></table></div><p class="dash-note" id="dash-note2"></p>';
+      +'</tbody></table></div><p class="dash-note" id="dash-note2"></p>'
+      +'<div class="sect">ఆహ్వానములు ('+invites.length+')</div>'
+      +'<p class="sh-sub">ఇమెయిల్ జోడించి పాత్ర ఎంచుకొండి. ఆ ఇమెయిల్‌తో ప్రవేశించినపుడు ఆ పాత్ర స్వయంగా ఇవ్వబడును.</p>'
+      +'<div class="invite-form">'
+      +'<input id="inv-email" type="email" placeholder="user@gmail.com" autocomplete="off">'
+      +'<select id="inv-role">'+roles.map(function(r){ return '<option value="'+esc(r.key)+'">'+esc(r.label)+'</option>'; }).join('')+'</select>'
+      +'<button class="btn primary" id="inv-add" type="button">జోడించండి</button>'
+      +'</div>'
+      +'<div class="dash-wrap"><table class="dash"><thead><tr><th>ఇమెయిల్</th><th>పాత్ర</th><th></th></tr></thead><tbody>'
+      +(invites.length? invites.map(function(v){
+          return '<tr><td class="u-mail">'+esc(v.email)+'</td><td>'+esc(roleLabel(v.role_key))+'</td>'
+               +'<td><button class="pback" type="button" data-uninvite="'+esc(v.email)+'">తొలగించు</button></td></tr>';
+        }).join('') : '<tr><td colspan="3" class="dash-note">ఇంకా ఎవరూ ఆహ్వానించబడలేదు.</td></tr>')
+      +'</tbody></table></div><p class="dash-note" id="dash-note3"></p>';
     openPage('డాష్‌బోర్డ్',html,function(){
       document.querySelectorAll('.dash input[type=checkbox]').forEach(function(cb){
         cb.onchange=function(){
@@ -1653,6 +1680,28 @@ function pageDashboard(){
             });
         };
       });
+      function note3(msg){ var n=$('dash-note3'); if(n) n.textContent=msg; }
+      var addBtn=$('inv-add');
+      if(addBtn) addBtn.onclick=function(){
+        var em=($('inv-email')||{}).value||''; em=em.trim().toLowerCase();
+        var rl=($('inv-role')||{}).value||'guest';
+        if(!em || em.indexOf('@')<1) return note3('సరైన ఇమెయిల్ ఇవ్వండి.');
+        addBtn.disabled=true; note3('జోడిస్తోంది…');
+        AUTH.sb.from('app_invites').upsert({email:em,role_key:rl},{onConflict:'email'})
+          .then(function(res){
+            addBtn.disabled=false;
+            if(res.error) return note3('లోపం: '+res.error.message);
+            note3('జోడించబడింది ✓');
+            pageDashboard();
+          });
+      };
+      document.querySelectorAll('[data-uninvite]').forEach(function(b){
+        b.onclick=function(){
+          var em=b.getAttribute('data-uninvite'); note3('తొలగిస్తోంది…');
+          AUTH.sb.from('app_invites').delete().eq('email',em)
+            .then(function(res){ note3(res.error?('లోపం: '+res.error.message):'తొలగించబడింది ✓'); if(!res.error) pageDashboard(); });
+        };
+      });
       document.querySelectorAll('.dash input[data-active]').forEach(function(cb){
         cb.onchange=function(){
           note2('సేవ్ అవుతోంది…');
@@ -1672,7 +1721,7 @@ function pageDashboard(){
     const k=localStorage.getItem('bala_key')||C.supabaseAnonKey||'';
     if(!(u&&k)){ connectScreen(u||'', k||'', 'Connection details were not found \u2014 enter the project URL and key to continue.'); return; }
     CFG={url:u,key:k};
-    authBoot().then(function(ok){ if(ok){ startChat(); applyPerms(); } });
+    authBoot().then(function(ok){ if(ok){ startChat(); applyPerms(); applyHome(); } });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
