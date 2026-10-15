@@ -542,7 +542,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v53</span>
+  <span id="buildtag">build v54</span>
 </footer>
 
 <script>
@@ -1720,30 +1720,29 @@ function beautifyVerse(el){
 }
 
 /* ===== refresh =====
-   A plain reload can hand back the same cached build, so this unregisters the
-   service worker and empties its caches first. Everything in localStorage
-   (conversation, history, theme, type scale) is left untouched. */
+   Keeps the offline shell intact: instead of unregistering the service worker
+   and wiping its caches, this asks it to check for a newer version, waits for it
+   to take over, then reloads. Online you therefore always land on the current
+   build; offline the cached shell still serves. localStorage is untouched. */
 function hardRefresh(){
   var b=$('refreshbtn');
   if(b){ b.disabled=true; b.title='నవీకరిస్తోంది…'; b.textContent='…'; }
-  var steps=[];
+  var done=false;
+  function go(){ if(done) return; done=true; location.reload(); }
+
   try{
     if('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations){
-      steps.push(navigator.serviceWorker.getRegistrations().then(function(rs){
-        return Promise.all(rs.map(function(r){ return r.unregister(); }));
-      }).catch(function(){}));
+      // a new worker taking over is the signal that the fresh build is ready
+      navigator.serviceWorker.addEventListener('controllerchange', go);
+      navigator.serviceWorker.getRegistrations()
+        .then(function(rs){ return Promise.all(rs.map(function(r){ return r.update().catch(function(){}); })); })
+        .then(function(){ setTimeout(go, 1200); })
+        .catch(function(){ setTimeout(go, 400); });
+      setTimeout(go, 3000);            // never hang if nothing answers
+      return;
     }
   }catch(e){}
-  try{
-    if(window.caches && caches.keys){
-      steps.push(caches.keys().then(function(ks){
-        return Promise.all(ks.map(function(k){ return caches.delete(k); }));
-      }).catch(function(){}));
-    }
-  }catch(e){}
-  Promise.all(steps).catch(function(){}).then(function(){
-    setTimeout(function(){ location.reload(); }, 150);
-  });
+  location.reload();
 }
 (function(){
   var b=$('refreshbtn');
