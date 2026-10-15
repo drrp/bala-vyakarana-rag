@@ -541,7 +541,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v51</span>
+  <span id="buildtag">build v52</span>
 </footer>
 
 <script>
@@ -680,7 +680,6 @@ function pageChatbot(){
     function(){
       var q=$('q');
       if(q) q.addEventListener('input',function(){ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,140)+'px'; });
-      var sb=$('send'); if(sb) sb.onclick=function(){ trySend(); };
       var cl=$('clear');
       if(cl){
         cl.style.display='inline-block';
@@ -1883,8 +1882,14 @@ function loadLimitState(){
     .catch(function(){});
 }
 /* Ask the server before spending a question; it counts and answers. */
+var _sending=false;
 function trySend(){
+  var q=$('q');
+  var text = q ? String(q.value||'').trim() : '';
+  if(!text){ return; }                        /* nothing asked: never counts */
+  if(_sending){ return; }                     /* a send is already in flight */
   if(CHAT_LIMIT.loaded && limitReached()){ applyLimitState(); return; }
+  _sending=true;
   AUTH.sb.rpc('app_chat_allow').then(function(r){
     var row = Array.isArray(r.data) ? r.data[0] : r.data;
     if(row){
@@ -1892,9 +1897,12 @@ function trySend(){
       CHAT_LIMIT.used  = row.used;
       CHAT_LIMIT.loaded = true;
     }
-    if(row && row.allowed === false){ applyLimitState(); return; }
-    send();
-  }).catch(function(){ send(); });   /* never block chat on a limiter error */
+    if(row && row.allowed === false){ _sending=false; applyLimitState(); return; }
+    Promise.resolve(send()).then(function(){ _sending=false; }, function(){ _sending=false; });
+  }).catch(function(){
+    /* never block the chat on a limiter error, but still only count once */
+    Promise.resolve(send()).then(function(){ _sending=false; }, function(){ _sending=false; });
+  });
 }
 function fillWho(){
   var u=AUTH.user||{}; var md=u.user_metadata||{};
