@@ -1600,12 +1600,17 @@ function pageDashboard(){
   }).catch(function(e){ openPage('డాష్‌బోర్డ్','<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
 }
 (function(){
-  const C=window.BALA_CONFIG||{};
-  const u=localStorage.getItem('bala_url')||C.supabaseUrl||PROJECT_URL;
-  const k=localStorage.getItem('bala_key')||C.supabaseAnonKey||'';
-  if(!(u&&k)){ connectScreen(u||'', k||'', 'Connection details were not found — enter the project URL and key to continue.'); return; }
-  CFG={url:u,key:k};
-  authBoot().then(function(ok){ if(ok){ startChat(); applyPerms(); } });
+  /* The gate markup sits after this script in the document, so wait for the DOM
+     before looking for it — otherwise $('gate') is null and nothing is shown. */
+  function boot(){
+    const C=window.BALA_CONFIG||{};
+    const u=localStorage.getItem('bala_url')||C.supabaseUrl||PROJECT_URL;
+    const k=localStorage.getItem('bala_key')||C.supabaseAnonKey||'';
+    if(!(u&&k)){ connectScreen(u||'', k||'', 'Connection details were not found \u2014 enter the project URL and key to continue.'); return; }
+    CFG={url:u,key:k};
+    authBoot().then(function(ok){ if(ok){ startChat(); applyPerms(); } });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 </script>
 <div id="gate" class="gate">
