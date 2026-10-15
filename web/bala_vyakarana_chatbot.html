@@ -225,6 +225,8 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .dash tbody th{text-align:left;color:var(--ink);font-weight:600;white-space:nowrap}
 .dash input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
 .dash-note{font-family:var(--font-tel);font-size:13px;color:var(--ink-faint);min-height:18px}
+.landing-cta{display:flex;justify-content:center;padding:6px 20px 28px}
+.landing-cta .btn{font-size:15.5px;padding:13px 26px}
 .who{display:flex;align-items:center;gap:9px;margin-left:4px}
 .who-pic{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--line-strong);background:var(--surface-2)}
 .who-name{font-family:var(--font-tel);font-size:13.5px;color:var(--ink);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -527,15 +529,9 @@ function connectScreen(u,k,msg,type){
   };
 }
 
-function startChat(){
-  HISTORY=[];
-  $('settings').style.display='none'; $('clear').style.display='inline-block';
-  $('tools').style.display='flex';
-  var _tc=document.querySelector('#tools .tool[data-page="chat"]'); if(_tc) _tc.classList.add('on');
-  document.querySelectorAll('#tools .tool').forEach(function(b){ b.onclick=function(){document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); });b.classList.add('on'); pageFor(b.getAttribute('data-page')); }; }); $('page-close').onclick=goHome;
-  app.innerHTML =
-    '<div class="chat"><div class="thread" id="thread">'+
-      '<div class="empty" id="welcome">'+
+/* The landing page (సంభాషణ) shows the invocation verses only. The chatbot
+   interface itself lives on its own page, కొత్త సంభాషణ. */
+var WELCOME_HTML = '<div class="empty" id="welcome">'+
         '<div class="vwrap">'+
           '<div class="vbox">'+
             '<span class="vh">కం.</span>   శ్రీలతకుం బ్రాఁకయి వృషశైలంబున వెలసి తనదు చాయ కెలయు ధ<br>'+
@@ -543,27 +539,40 @@ function startChat(){
           '</div>'+
           '<div class="vbox">'+
             '<span class="vh">కం.</span>   సత్యము శ్రేయము జనులకు సత్యము దక్కొండు లేదు సద్ధర్మమదే<br>'+
-            'యత్యలఘు తపః ఫలమిడు నిత్యతఁ బాటిల్లు దాన నిఖిలార్ధంబుల్. <span class="vr">(ప్రౌ. వ్యా. అవ.)</span>'+
+            'యత్యలఘు తపః ఫలమిడు నిత్యతఁ బాటిల్లు దాన నిఖిలార్థంబుల్. <span class="vr">(ప్రౌ. వ్యా. అవ.)</span>'+
           '</div>'+
         '</div>'+
         '<h2>నమస్కారం! తెలుగు సంప్రదాయ వ్యాకరణాధ్యయనాన్ని ప్రారంభించండి.</h2>'+
         '<p>సంధి, సమాసము, కారకములు, సూత్రములు, ఉదాహరణలు, సంజ్ఞలు, పరిభాష... ఏదైనా అడగండి.</p>'+
-      '</div>'+
-    '</div></div>'+
-    '<div class="composer"><div class="in">'+
+      '</div>';
+var COMPOSER_HTML = '<div class="composer"><div class="in">'+
       '<textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'+
       '<button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'+
-    '</div>'
-    '<button class="egline" id="egline" type="button" onclick="useEg()"></button>'
+    '</div>'+
+    '<button class="egline" id="egline" type="button" onclick="useEg()"></button>'+
     '</div>';
-  $('settings').onclick=()=>connectScreen(CFG.url,CFG.key,'');
-  $('clear').onclick=()=>startChat();
-  const q=$('q');
-  q.addEventListener('input',()=>{ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,170)+'px'; });
-  q.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
-  $('send').onclick=function(){ send(); };
-  startEgRotate(q);
-  if(window.matchMedia('(pointer:fine)').matches) q.focus();
+function startChat(){
+  HISTORY=[];
+  $('settings').style.display='none'; $('clear').style.display='none';
+  $('tools').style.display='flex';
+  document.querySelectorAll('#tools .tool').forEach(function(b){ b.onclick=function(){document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); });b.classList.add('on'); pageFor(b.getAttribute('data-page')); }; });
+  $('page-close').onclick=goHome;
+  app.innerHTML = '<div class="chat"><div class="thread" id="thread">'+WELCOME_HTML+'</div></div>'+
+    '<div class="landing-cta"><button class="btn primary" id="open-chatbot" type="button">కొత్త సంభాషణ ప్రారంభించండి →</button></div>';
+  var ob=$('open-chatbot'); if(ob) ob.onclick=function(){ pageFor('chatbot'); };
+}
+function pageChatbot(){
+  if(!AUTH.allowed['chatbot']){ openPage('కొత్త సంభాషణ','<p class="sh-sub">ఈ పేజీకి అనుమతి లేదు.</p>'); return; }
+  openPage('కొత్త సంభాషణ', '<div class="chat"><div class="thread" id="thread">'+WELCOME_HTML+'</div></div>'+COMPOSER_HTML, function(){
+    var q=$('q');
+    if(q){
+      q.addEventListener('input',function(){ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,170)+'px'; });
+      q.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
+      startEgRotate(q);
+    }
+    var sb=$('send'); if(sb) sb.onclick=function(){ send(); };
+    if(window.matchMedia('(pointer:fine)').matches && q) q.focus();
+  });
 }
 
 var EG_QS=[
@@ -664,6 +673,7 @@ function closePage(){
 
 
 function pageFor(name){
+  if(name==='chatbot') return pageChatbot();
   if(name==='dashboard') return pageDashboard();
   if(name==='saved') return pageSaved();
   if(name==='text') return pageText();
@@ -1558,6 +1568,12 @@ function loadPerms(){
     })
     .catch(function(){ AUTH.role='guest'; AUTH.allowed={}; });
 }
+function niceErr(m){
+  m=String(m||'');
+  if(/row-level security/i.test(m)) return 'ఈ పనికి నిర్వాక అనుమతి కావాలి — మీ పాత్ర నిర్వాహకుడిగా ఉండాలి.';
+  if(/duplicate key/i.test(m)) return 'ఇది ఇప్పటికే ఉంది.';
+  return m;
+}
 function fillWho(){
   var u=AUTH.user||{}; var md=u.user_metadata||{};
   var nm=md.full_name||md.name||u.email||'';
@@ -1670,11 +1686,16 @@ function pageDashboard(){
       });
       function note2(msg){ var n=$('dash-note2'); if(n) n.textContent=msg; }
       document.querySelectorAll('.dash select[data-user]').forEach(function(sel){
+        if(AUTH.user && sel.getAttribute('data-user')===AUTH.user.id){
+          sel.disabled=true;
+          sel.title='మీ స్వంత పాత్రను ఇక్కడ మార్చలేరు.';
+        }
         sel.onchange=function(){
+          if(AUTH.user && sel.getAttribute('data-user')===AUTH.user.id) return note2('మీ స్వంత పాత్రను మీరే మార్చుకోలేరు.');
           note2('సేవ్ అవుతోంది…');
           AUTH.sb.from('app_users').update({role_key:sel.value}).eq('user_id',sel.getAttribute('data-user'))
             .then(function(res){
-              if(res.error) return note2('లోపం: '+res.error.message);
+              if(res.error) return note2('లోపం: '+niceErr(res.error.message));
               note2('పాత్ర మార్చబడింది ✓');
               if(AUTH.user && sel.getAttribute('data-user')===AUTH.user.id){ AUTH.role=sel.value; }
             });
@@ -1690,7 +1711,7 @@ function pageDashboard(){
         AUTH.sb.from('app_invites').upsert({email:em,role_key:rl},{onConflict:'email'})
           .then(function(res){
             addBtn.disabled=false;
-            if(res.error) return note3('లోపం: '+res.error.message);
+            if(res.error) return note3('లోపం: '+niceErr(res.error.message));
             note3('జోడించబడింది ✓');
             pageDashboard();
           });
@@ -1706,7 +1727,7 @@ function pageDashboard(){
         cb.onchange=function(){
           note2('సేవ్ అవుతోంది…');
           AUTH.sb.from('app_users').update({is_active:cb.checked}).eq('user_id',cb.getAttribute('data-active'))
-            .then(function(res){ note2(res.error?('లోపం: '+res.error.message):'సేవ్ అయింది ✓'); });
+            .then(function(res){ note2(res.error?('లోపం: '+niceErr(res.error.message)):'సేవ్ అయింది ✓'); });
         };
       });
     });
