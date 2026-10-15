@@ -225,6 +225,15 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .dash tbody th{text-align:left;color:var(--ink);font-weight:600;white-space:nowrap}
 .dash input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
 .dash-note{font-family:var(--font-tel);font-size:13px;color:var(--ink-faint);min-height:18px}
+.who{display:flex;align-items:center;gap:9px;margin-left:4px}
+.who-pic{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--line-strong);background:var(--surface-2)}
+.who-name{font-family:var(--font-tel);font-size:13.5px;color:var(--ink);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:700px){.who-name{display:none}}
+.u-cell{display:flex;align-items:center;gap:9px;text-align:left;min-width:190px}
+.u-pic{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1px solid var(--line);background:var(--surface-2);flex:none}
+.u-mail{font-size:12.5px;color:var(--ink-dim);word-break:break-all}
+.dash select{font-family:var(--font-tel);font-size:13px;padding:5px 8px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+.dash .sect{font-family:var(--font-tel-display);font-size:15px;color:var(--ink);margin:22px 0 6px}
 .page{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column}
 .page-hd{display:flex;align-items:center;gap:12px;padding:calc(11px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 11px calc(14px + env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--bg)}
 .page-hd h2{margin:0;font-family:var(--font-tel-display);font-size:17px}
@@ -409,6 +418,11 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
     </div>
   </div>
   <div class="right">
+    <div class="who" id="who" style="display:none">
+      <img id="who-pic" class="who-pic" alt="">
+      <span id="who-name" class="who-name"></span>
+    </div>
+    <button class="btn" id="logout" style="display:none" title="నిష్క్రమించు">నిష్క్రమించు</button>
     <button class="btn" id="themebtn" title="రంగు మార్చు" aria-label="Theme">☾</button>
     <button class="btn" id="settings" style="display:none">Connection</button>
     <button class="btn" id="clear" style="display:none">New chat</button>
@@ -1541,6 +1555,16 @@ function loadPerms(){
     })
     .catch(function(){ AUTH.role='guest'; AUTH.allowed={}; });
 }
+function fillWho(){
+  var u=AUTH.user||{}; var md=u.user_metadata||{};
+  var nm=md.full_name||md.name||u.email||'';
+  var pic=md.avatar_url||md.picture||'';
+  var w=$('who'), n=$('who-name'), i=$('who-pic'), lo=$('logout');
+  if(n) n.textContent=nm;
+  if(i&&pic) i.src=pic;
+  if(w) w.style.display='flex';
+  if(lo) lo.style.display='inline-block';
+}
 function applyPerms(){
   document.querySelectorAll('#tools .tool').forEach(function(b){
     b.style.display=AUTH.allowed[b.getAttribute('data-page')]?'':'none';
@@ -1561,7 +1585,12 @@ function authBoot(){
     var sess=s&&s.data&&s.data.session;
     if(!sess){ gateShow(''); return false; }
     AUTH.user=sess.user;
-    return loadPerms().then(function(){ gateHide(); return true; });
+    return loadPerms().then(function(){
+      gateHide(); fillWho();
+      var lo=$('logout');
+      if(lo) lo.onclick=function(){ lo.disabled=true; AUTH.sb.auth.signOut().then(function(){ location.reload(); }); };
+      return true;
+    });
   }).catch(function(e){ gateShow(String(e&&e.message||e).slice(0,200)); return false; });
 }
 function pageDashboard(){
@@ -1570,9 +1599,10 @@ function pageDashboard(){
   Promise.all([
     AUTH.sb.from('app_roles').select('key,label,sort_order').order('sort_order'),
     AUTH.sb.from('app_pages').select('key,label,sort_order').order('sort_order'),
-    AUTH.sb.from('app_role_pages').select('role_key,page_key,allowed')
+    AUTH.sb.from('app_role_pages').select('role_key,page_key,allowed'),
+    AUTH.sb.from('app_users').select('user_id,email,name,picture,role_key,is_active,last_login').order('created_at')
   ]).then(function(res){
-    var roles=res[0].data||[], pages=res[1].data||[], mat=res[2].data||[];
+    var roles=res[0].data||[], pages=res[1].data||[], mat=res[2].data||[], users=res[3].data||[];
     var look={}; mat.forEach(function(m){ look[m.role_key+'|'+m.page_key]=m.allowed; });
     var html='<p class="sh-sub">పాత్రల ఆధారముగా ఏ పేజీలు కనిపించాలో టిక్ చేయండి. మార్పు వెంటనే సేవ్ అగును.</p>'
       +'<div class="dash-wrap"><table class="dash"><thead><tr><th>పాత్ర</th>'
@@ -1582,7 +1612,22 @@ function pageDashboard(){
             return '<td><input type="checkbox" data-role="'+esc(r.key)+'" data-page="'+esc(p.key)+'"'+(look[r.key+'|'+p.key]?' checked':'')+'></td>';
           }).join('')+'</tr>';
         }).join('')
-      +'</tbody></table></div><p class="dash-note" id="dash-note"></p>';
+      +'</tbody></table></div><p class="dash-note" id="dash-note"></p>'
+      +'<div class="sect">వినియోగదారులు ('+users.length+')</div>'
+      +'<div class="dash-wrap"><table class="dash"><thead><tr>'
+      +'<th>వినియోగదారు</th><th>ఇమెయిల్</th><th>పాత్ర</th><th>క్రియాశీలం</th></tr></thead><tbody>'
+      +(users.length? users.map(function(u){
+          return '<tr>'
+            +'<td class="u-cell">'+(u.picture?'<img class="u-pic" src="'+esc(u.picture)+'" alt="">':'<span class="u-pic"></span>')
+            +'<span>'+esc(u.name||'(పేరు లేదు)')+'</span></td>'
+            +'<td class="u-mail">'+esc(u.email||'')+'</td>'
+            +'<td><select data-user="'+esc(u.user_id)+'">'
+            + roles.map(function(r){ return '<option value="'+esc(r.key)+'"'+(r.key===u.role_key?' selected':'')+'>'+esc(r.label)+'</option>'; }).join('')
+            +'</select></td>'
+            +'<td><input type="checkbox" data-active="'+esc(u.user_id)+'"'+(u.is_active?' checked':'')+'></td>'
+            +'</tr>';
+        }).join('') : '<tr><td colspan="4" class="dash-note">ఇంకా ఎవరూ ప్రవేశించలేదు.</td></tr>')
+      +'</tbody></table></div><p class="dash-note" id="dash-note2"></p>';
     openPage('డాష్‌బోర్డ్',html,function(){
       document.querySelectorAll('.dash input[type=checkbox]').forEach(function(cb){
         cb.onchange=function(){
@@ -1594,6 +1639,25 @@ function pageDashboard(){
               if(nn) nn.textContent=res.error?('లోపం: '+res.error.message):'సేవ్ అయింది ✓';
               if(!res.error && r===AUTH.role){ if(v) AUTH.allowed[pg]=1; else delete AUTH.allowed[pg]; applyPerms(); }
             });
+        };
+      });
+      function note2(msg){ var n=$('dash-note2'); if(n) n.textContent=msg; }
+      document.querySelectorAll('.dash select[data-user]').forEach(function(sel){
+        sel.onchange=function(){
+          note2('సేవ్ అవుతోంది…');
+          AUTH.sb.from('app_users').update({role_key:sel.value}).eq('user_id',sel.getAttribute('data-user'))
+            .then(function(res){
+              if(res.error) return note2('లోపం: '+res.error.message);
+              note2('పాత్ర మార్చబడింది ✓');
+              if(AUTH.user && sel.getAttribute('data-user')===AUTH.user.id){ AUTH.role=sel.value; }
+            });
+        };
+      });
+      document.querySelectorAll('.dash input[data-active]').forEach(function(cb){
+        cb.onchange=function(){
+          note2('సేవ్ అవుతోంది…');
+          AUTH.sb.from('app_users').update({is_active:cb.checked}).eq('user_id',cb.getAttribute('data-active'))
+            .then(function(res){ note2(res.error?('లోపం: '+res.error.message):'సేవ్ అయింది ✓'); });
         };
       });
     });
