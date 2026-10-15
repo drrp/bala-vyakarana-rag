@@ -175,17 +175,6 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
   padding:12px calc(14px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left))}
 .composer .in{max-width:840px;margin:0 auto;display:flex;gap:10px;align-items:flex-end}
-.modes{max-width:840px;margin:0 auto 9px;display:flex;gap:8px}
-.mode{font-family:var(--font-tel-display);font-size:12.5px;letter-spacing:.02em;padding:5px 13px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-dim);cursor:pointer}
-.mode:hover{border-color:var(--accent)}
-.mode.on{background:var(--accent);border-color:var(--accent);color:#fff}
-.srch{display:flex;flex-direction:column;gap:15px}
-.srch-grp{font-family:var(--font-tel-display);font-size:13px;color:var(--gold);letter-spacing:.04em;margin:3px 0 0}
-.srch-item{border-left:3px solid var(--line-strong);padding:0 0 0 12px}
-.srch-ref{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.03em;color:var(--ink-faint);margin:0 0 4px}
-.srch-txt{font-family:var(--font-tel);font-size:15.5px;line-height:1.85;color:var(--ink-dim);text-align:justify;text-justify:inter-word;white-space:pre-wrap}
-.srch-sut{font-family:var(--font-tel);font-size:16.5px;line-height:1.85;color:#1d4ed8}
-.srch-note{font-family:var(--font-tel);font-size:14px;color:var(--ink-faint)}
 .composer textarea{flex:1;resize:none;min-height:48px;max-height:170px;padding:13px 16px;border-radius:var(--r-md);
   border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font-family:var(--font-tel);
   font-size:16px;outline:none;line-height:1.5;transition:border-color .18s,box-shadow .18s}
@@ -478,7 +467,7 @@ const md = s => {
   closeAll();
   return out.join('');
 };
-let CFG = null, HISTORY = [], MODE = 'tutor';
+let CFG = null, HISTORY = [];
 
 function connectScreen(u,k,msg,type){
   $('settings').style.display='none'; $('clear').style.display='none'; $('tools').style.display='none';
@@ -526,10 +515,6 @@ function startChat(){
         '<p>సంధి, సమాసము, కారకములు, సూత్రములు, ఉదాహరణలు, సంజ్ఞలు, పరిభాష... ఏదైనా అడగండి.</p>'+
       '</div>'+
     '</div></div>'+
-    '<div class="modes">'+
-      '<button class="mode on" type="button" data-mode="tutor">వ్యాకరణ సహాయకుడు</button>'+
-      '<button class="mode" type="button" data-mode="search">గ్రంథ పరిశోధన</button>'+
-    '</div>'+
     '<div class="composer"><div class="in">'+
       '<textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'+
       '<button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'+
@@ -542,15 +527,6 @@ function startChat(){
   q.addEventListener('input',()=>{ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,170)+'px'; });
   q.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); send(); } });
   $('send').onclick=function(){ send(); };
-  document.querySelectorAll('.mode').forEach(function(b){
-    b.onclick=function(){
-      MODE=b.getAttribute('data-mode');
-      document.querySelectorAll('.mode').forEach(function(x){ x.classList.toggle('on', x===b); });
-      if(MODE==='search'){ clearInterval(EG_T); if(q) q.setAttribute('placeholder','గ్రంథములో పదము వెతకండి…  →'); }
-      else { startEgRotate(q); }
-      if(q) q.focus();
-    };
-  });
   startEgRotate(q);
   if(window.matchMedia('(pointer:fine)').matches) q.focus();
 }
@@ -589,68 +565,6 @@ function startEgRotate(q){
   paint();
   EG_T=setInterval(function(){ EG_I=(EG_I+1)%EG_QS.length; paint(); }, 4500);
 }
-function srchRef(doc, ref){
-  var n=(String(ref||'').match(/(\d+)/)||[])[1]||'';
-  if(/బాలవ్యాకరణ ఘంటాపథము/.test(doc)) return 'బా.వ్యా. ఘం. ప. '+n;
-  if(/ప్రౌఢవ్యాకరణ ఘంటాపథము/.test(doc)) return 'ప్రౌ. వ్యా. ఘం. ప. '+n;
-  if(/సాహిత్య సోపానములు/.test(doc)) return 'సాహి. సోపా. ప. '+n;
-  return String(doc||'').replace(/\.pdf$/i,'')+' ప. '+n;
-}
-function srchClean(t){
-  return String(t||'')
-    .replace(/^[^\n]*—[^\n]*\n/gm,'')
-    .replace(/^[^\n]*ఘంటాపథము\s*$/gm,'')
-    .replace(/\n{2,}/g,'\n').trim();
-}
-/* గ్రంథ పరిశోధన — the corpus is queried straight from the browser (search_rag_text is
-   anon-callable), so this path needs no model and no quota. */
-function srchSend(text){
-  var thread=$('thread'); var w=$('welcome'); if(w) w.remove();
-  thread.appendChild(bubble('user','<p>'+esc(text)+'</p>'));
-  var load=document.createElement('div'); load.className='turn';
-  load.innerHTML='<div class="av a thinking">సమా.</div><div class="bub"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> గ్రంథములో వెతుకుతోంది…</div></div>';
-  thread.appendChild(load); load.scrollIntoView({behavior:'smooth',block:'end'});
-  $('send').disabled=true;
-  sbRpc('search_rag_text',{q:text, match_count:100, context_radius:1200})
-    .then(function(rows){
-      load.remove();
-      if(!rows || !rows.length){
-        thread.appendChild(bubble('assistant','<p class="srch-note">'+esc('"'+text+'" కు సంబంధించిన భాగములు దొరకలేదు.')+'</p>'));
-        return;
-      }
-      var sutras=[], bala=[], prau=[], other=[];
-      rows.forEach(function(r){
-        var d=String(r.doc||'');
-        if(/బాలవ్యాకరణ ఘంటాపథము/.test(d)) bala.push(r);
-        else if(/ప్రౌఢవ్యాకరణ ఘంటాపథము/.test(d)) prau.push(r);
-        else if(String(r.ref||'').toLowerCase().indexOf('sutra')===0) sutras.push(r);
-        else other.push(r);
-      });
-      var html='<div class="srch">';
-      function grp(title, list, isSutra){
-        if(!list.length) return;
-        html+='<div class="srch-grp">'+esc(title+' ('+list.length+')')+'</div>';
-        list.forEach(function(r){
-          var body=isSutra ? (r.item_text||r.content||'') : (r.context||r.content||'');
-          html+='<div class="srch-item"><div class="srch-ref">'+esc(srchRef(r.doc,r.ref))+'</div>'
-               +'<div class="'+(isSutra?'srch-sut':'srch-txt')+'">'+esc(srchClean(body))+'</div></div>';
-        });
-      }
-      grp('సూత్రములు', sutras, true);
-      grp('బాలవ్యాకరణ ఘంటాపథము', bala, false);
-      grp('ప్రౌఢవ్యాకరణ ఘంటాపథము', prau, false);
-      grp('ఇతరులు', other, false);
-      thread.appendChild(bubble('assistant', html+'</div>'));
-    })
-    .catch(function(e){
-      load.remove();
-      thread.appendChild(bubble('assistant','<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,300))+'</p>'));
-    })
-    .then(function(){
-      $('send').disabled=false;
-      var last=thread.lastChild; if(last && last.scrollIntoView) last.scrollIntoView({behavior:'smooth',block:'end'});
-    });
-}
 function bubble(role, html, meta){
   const t=document.createElement('div'); t.className='turn '+role;
   let inner='<div class="av '+(role==='user'?'u':'a')+'">'+(role==='user'?'ప్రశ్న:':'సమా.')+'</div><div class="bub">'+html;
@@ -671,7 +585,6 @@ async function send(override){
   const q=$('q');
   const text = override ? override.prompt : (q ? q.value.trim() : '');
   if(!text) return;
-  if(MODE==='search'){ if(!override && q){ q.value=''; q.style.height='auto'; } srchSend(text); return; }
   const shown = override ? (override.display || override.prompt) : text;
   const thread=$('thread'); const w=$('welcome'); if(w) w.remove();
   if(!override && q){ q.value=''; q.style.height='auto'; }
@@ -739,12 +652,6 @@ var SB={p:[],i:[]};
 var SB_PER=12;                       // items per page
 function tc(x){                      // tidy a run of text
   return String(x==null?'':x).replace(/\s*\n\s*/g,' ').replace(/[ \t]{2,}/g,' ').trim();
-}
-function sbRpc(fn, body){
-  return fetch(CFG.url+'/rest/v1/rpc/'+fn,{method:'POST',
-    headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},
-    body:JSON.stringify(body||{})})
-    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
 }
 function sbGet(path,params){
   var url=CFG.url+'/rest/v1/'+path+'?'+params;
