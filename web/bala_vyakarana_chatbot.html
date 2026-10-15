@@ -473,6 +473,10 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .chipwrap button:hover{background:var(--surface-2);border-color:var(--accent)}
 
 
+.hist-search{display:flex;gap:8px;margin:4px 0 14px}
+.hist-search input{flex:1;font-family:var(--font-tel);font-size:14px;padding:10px 13px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink)}
+.hist-search button{font-family:var(--font-tel);font-size:14px;padding:10px 16px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);cursor:pointer}
+.hist-search button:hover{border-color:var(--accent)}
 .saved-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;background:var(--surface-2)}
 .saved-item .sq{font-family:var(--font-tel);font-size:13px;color:var(--ink-dim);margin-bottom:6px}
 .saved-item .sa{font-family:var(--font-tel);font-size:14.5px;line-height:1.65;max-height:5.6em;overflow:hidden;white-space:pre-wrap}
@@ -518,7 +522,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 </header>
 <nav class="tools" id="tools" style="display:none">
   <button class="tool" data-page="chat">స్వాగతం</button>
-  <button class="tool" data-page="saved">సేవ్</button>
+  <button class="tool" data-page="saved">చరిత్ర</button>
   <button class="tool" data-page="text">గ్రంథము</button>
   <button class="tool" data-page="quiz">పరీక్షణ</button>
   <button class="tool" data-page="dashboard">డాష్‌బోర్డ్</button>
@@ -536,7 +540,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v48</span>
+  <span id="buildtag">build v49</span>
 </footer>
 
 <script>
@@ -676,7 +680,10 @@ function pageChatbot(){
       var q=$('q');
       if(q) q.addEventListener('input',function(){ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,140)+'px'; });
       var sb=$('send'); if(sb) sb.onclick=function(){ trySend(); };
+      var cl=$('clear');
+      if(cl){ cl.style.display='inline-block'; cl.onclick=function(){ clearChatStore(); HISTORY=[]; pageChatbot(); }; }
       $('page-body').classList.add('chatpage');
+      if(!restoreChat()){ /* first time: the greeting stays */ }
       loadLimitState();
       if(window.matchMedia('(pointer:fine)').matches && q) q.focus();
     });
@@ -756,6 +763,8 @@ async function send(override){
     HISTORY.push({role:'assistant', content:answer});
     load.remove();
     thread.appendChild(bubble('assistant',md(answer),{q:shown,a:answer}));
+    saveChat();
+    recordQA(shown, answer);
   }catch(e){
     load.remove();
     thread.appendChild(bubble('assistant','<p style="color:#c0392b">లోపం: '+esc(String(e && e.message || e).slice(0,300))+'</p>'));
@@ -791,6 +800,31 @@ function pageFor(name){
 
 
 var SAVED_KEY='bala_saved_v1';
+var CHAT_KEY='bala_chat_v1';          // the live conversation, kept until cleared
+function loadChat(){ try{ var o=JSON.parse(localStorage.getItem(CHAT_KEY)||'null'); return (o&&Array.isArray(o.h)&&o.h.length)?o:null; }catch(e){ return null; } }
+function saveChat(){ try{ localStorage.setItem(CHAT_KEY, JSON.stringify({h:HISTORY, t:Date.now()})); }catch(e){} }
+function clearChatStore(){ try{ localStorage.removeItem(CHAT_KEY); }catch(e){} }
+function recordQA(q,a){
+  if(!q||!a) return;
+  var arr=loadSaved(), i=-1;
+  for(var k=0;k<arr.length;k++){ if(arr[k].a===a){ i=k; break; } }
+  if(i>=0) arr.splice(i,1);
+  arr.unshift({q:q, a:a, ts:Date.now(), note:(i>=0?arr[i]&&arr[i].note:'')||''});
+  storeSaved(arr.slice(0,300));
+}
+function restoreChat(){
+  var saved=loadChat();
+  if(!saved) return false;
+  var thread=$('thread'); if(!thread) return false;
+  HISTORY = saved.h.slice();
+  thread.innerHTML='';
+  saved.h.forEach(function(m){
+    if(m.role==='user') thread.appendChild(bubble('user','<p>'+esc(m.content)+'</p>'));
+    else thread.appendChild(bubble('assistant', md(m.content), {q:'', a:m.content}));
+  });
+  var last=thread.lastChild; if(last && last.scrollIntoView) last.scrollIntoView({block:'end'});
+  return true;
+}
 function loadSaved(){ try{ var a=JSON.parse(localStorage.getItem(SAVED_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 function storeSaved(a){ try{ localStorage.setItem(SAVED_KEY, JSON.stringify(a)); }catch(e){} }
 function saveAnswer(q, a, sb){
@@ -1556,9 +1590,17 @@ function qzAnswer(btn, idx){
   $('qz-next').onclick=function(){ QZ.i++; QZ.done=false; qzRender(); };
 }
 function pageSaved(){
-  var arr=loadSaved();
-  var html='<p class="sh-sub">సేవ్ చేసిన సమాధానాలు'+(arr.length?(' ('+arr.length+')'):'')+' — ఈ పరికరంలో నిల్వ.</p>';
-  if(!arr.length) html+='<p class="sh-sub">ఇంకా ఏమీ లేదు — ఏదైనా సమాధానం కింద ☆ సేవ్ నొక్కండి.</p>';
+  var all=loadSaved();
+  var q=($('hist-q')&&$('hist-q').value||'').trim();
+  var arr=all;
+  if(q){
+    var nq=q.toLowerCase();
+    arr=all.filter(function(x){ return ((x.q||'')+' '+(x.a||'')).toLowerCase().indexOf(nq)>=0; });
+  }
+  var html='<p class="sh-sub">సంభాషణ చరిత్ర'+(all.length?(' ('+(q?(arr.length+' / '+all.length):all.length)+')'):'')+' — ఈ పరికరంలో నిల్వ ఉండును.</p>'
+    + '<div class="hist-search"><input id="hist-q" type="search" placeholder="ప్రశ్న లేదా సమాధానములో వెతకండి…" value="'+esc(q)+'" autocomplete="off"><button id="hist-go" type="button">వెతకండి</button></div>';
+  if(!all.length) html+='<p class="sh-sub">ఇంకా ఏమీ లేదు — చాట్‌లో ప్రశ్న అడిగిన ప్రతిదీ ఇక్కడ నమోదగును.</p>';
+  else if(!arr.length) html+='<p class="sh-sub">"'+esc(q)+'" కు సరిపోలేదు.</p>';
   arr.forEach(function(x,i){
     html+='<div class="saved-item" data-i="'+i+'"><div class="sq">'+esc(x.q||'(ప్రశ్న నమోదు కాలేదు)')+'</div>'
       +'<div class="sa">'+esc(x.a).slice(0,420)+(x.a.length>420?'…':'')+'</div>'
@@ -1566,7 +1608,13 @@ function pageSaved(){
       +'<textarea placeholder="మీ నోట్…">'+esc(x.note||'')+'</textarea>'
       +'<div class="row2"><button data-act="expand">పూర్తిగా</button><button data-act="del">తొలగించు</button></div></div>';
   });
-  openPage('సేవ్ చేసినవి', html, function(){
+  openPage('సంభాషణ చరిత్ర', html, function(){
+    var hq=$('hist-q'), hg=$('hist-go');
+    if(hg) hg.onclick=function(){ pageSaved(); };
+    if(hq){
+      hq.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); pageSaved(); } });
+      if(q && window.matchMedia('(pointer:fine)').matches) hq.focus();
+    }
     document.querySelectorAll('#page-body .saved-item').forEach(function(el){
       var i=+el.getAttribute('data-i');
       el.querySelector('textarea').addEventListener('change',function(ev){ var a2=loadSaved(); if(a2[i]){ a2[i].note=ev.target.value; storeSaved(a2); } });
