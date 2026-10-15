@@ -540,7 +540,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v49</span>
+  <span id="buildtag">build v50</span>
 </footer>
 
 <script>
@@ -683,7 +683,8 @@ function pageChatbot(){
       var cl=$('clear');
       if(cl){ cl.style.display='inline-block'; cl.onclick=function(){ clearChatStore(); HISTORY=[]; pageChatbot(); }; }
       $('page-body').classList.add('chatpage');
-      if(!restoreChat()){ /* first time: the greeting stays */ }
+      restoreChat();
+      dbLoadChat().then(function(got){ if(got) restoreChat(); });
       loadLimitState();
       if(window.matchMedia('(pointer:fine)').matches && q) q.focus();
     });
@@ -802,8 +803,46 @@ function pageFor(name){
 var SAVED_KEY='bala_saved_v1';
 var CHAT_KEY='bala_chat_v1';          // the live conversation, kept until cleared
 function loadChat(){ try{ var o=JSON.parse(localStorage.getItem(CHAT_KEY)||'null'); return (o&&Array.isArray(o.h)&&o.h.length)?o:null; }catch(e){ return null; } }
-function saveChat(){ try{ localStorage.setItem(CHAT_KEY, JSON.stringify({h:HISTORY, t:Date.now()})); }catch(e){} }
-function clearChatStore(){ try{ localStorage.removeItem(CHAT_KEY); }catch(e){} }
+function saveChat(){ try{ localStorage.setItem(CHAT_KEY, JSON.stringify({h:HISTORY, t:Date.now()})); }catch(e){} dbSaveChat(); }
+/* The database is the source of truth so the conversation follows the account to any
+   device; localStorage stays as a cache so the restore is instant. */
+var _dbT=null;
+function dbSaveChat(){
+  if(!AUTH.sb || !AUTH.user) return;
+  clearTimeout(_dbT);
+  _dbT=setTimeout(function(){
+    AUTH.sb.from('app_chats').upsert({
+      user_id: AUTH.user.id,
+      messages: HISTORY,
+      history: loadSaved(),
+      updated_at: new Date().toISOString()
+    },{onConflict:'user_id'}).then(function(res){
+      if(res && res.error) console.warn('chat save failed:', res.error.message);
+    });
+  }, 500);
+}
+function dbLoadChat(){
+  if(!AUTH.sb || !AUTH.user) return Promise.resolve(false);
+  return AUTH.sb.from('app_chats').select('messages,history').eq('user_id',AUTH.user.id).maybeSingle()
+    .then(function(r){
+      var row=r && r.data;
+      if(!row) return false;
+      if(Array.isArray(row.messages) && row.messages.length){
+        HISTORY=row.messages.slice();
+        try{ localStorage.setItem(CHAT_KEY, JSON.stringify({h:HISTORY,t:Date.now()})); }catch(e){}
+      }
+      if(Array.isArray(row.history) && row.history.length) storeSaved(row.history.slice(0,300));
+      return true;
+    })
+    .catch(function(){ return false; });
+}
+function dbClearChat(){
+  if(!AUTH.sb || !AUTH.user) return Promise.resolve();
+  return AUTH.sb.from('app_chats')
+    .upsert({user_id:AUTH.user.id, messages:[], history:[], updated_at:new Date().toISOString()},{onConflict:'user_id'})
+    .then(function(){}).catch(function(){});
+}
+function clearChatStore(){ try{ localStorage.removeItem(CHAT_KEY); }catch(e){} storeSaved([]); dbClearChat(); }
 function recordQA(q,a){
   if(!q||!a) return;
   var arr=loadSaved(), i=-1;
@@ -1876,7 +1915,7 @@ function authBoot(){
     if(!sess){ gateShow(''); return false; }
     AUTH.user=sess.user;
     return loadPerms().then(function(){
-      gateHide(); fillWho(); loadLimitState();
+      gateHide(); fillWho(); loadLimitState(); dbLoadChat().then(function(){ });
       var lo=$('logout');
       if(lo) lo.onclick=function(){ lo.disabled=true; AUTH.sb.auth.signOut().then(function(){ location.reload(); }); };
       return true;
