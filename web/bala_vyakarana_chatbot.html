@@ -209,6 +209,22 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .tool.on{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:#fff;border-color:transparent;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 34%, transparent)}
 @media (max-width:700px){.tool{font-size:12.5px;padding:10px 15px}}
 .tool:active{transform:translateY(1px) scale(.98)}
+.gate{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);padding:24px}
+.gate-card{max-width:420px;width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r-lg);box-shadow:var(--shadow-2);padding:34px 30px;text-align:center}
+.gate-logo{width:86px;height:86px;object-fit:contain;margin:0 auto 14px;display:block}
+.gate-card h2{font-family:var(--font-tel-display);font-size:19px;color:var(--ink);margin:0 0 8px}
+.gate-card p{font-family:var(--font-tel);font-size:14.5px;color:var(--ink-dim);margin:0 0 20px}
+.gate-btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-tel);font-size:15px;font-weight:600;padding:12px 22px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);cursor:pointer}
+.gate-btn:hover{border-color:var(--accent);box-shadow:var(--shadow-1)}
+.gate-btn:disabled{opacity:.6;cursor:default}
+.gate-err{font-family:var(--font-tel);font-size:13px;color:#c0392b;margin:14px 0 0;min-height:18px}
+.dash-wrap{overflow-x:auto;margin:6px 0 10px}
+.dash{border-collapse:collapse;font-family:var(--font-tel);font-size:14px}
+.dash th,.dash td{border:1px solid var(--line);padding:7px 12px;text-align:center}
+.dash thead th{font-family:var(--font-tel-display);color:var(--gold);font-weight:600}
+.dash tbody th{text-align:left;color:var(--ink);font-weight:600;white-space:nowrap}
+.dash input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+.dash-note{font-family:var(--font-tel);font-size:13px;color:var(--ink-faint);min-height:18px}
 .page{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column}
 .page-hd{display:flex;align-items:center;gap:12px;padding:calc(11px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 11px calc(14px + env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--bg)}
 .page-hd h2{margin:0;font-family:var(--font-tel-display);font-size:17px}
@@ -382,6 +398,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 <link rel="icon" href="icons/icon-192.png">
 <script src="pwa.js" defer></script>
 <script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 <header class="top">
@@ -402,6 +419,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <button class="tool" data-page="saved">సేవ్</button>
   <button class="tool" data-page="text">గ్రంథము</button>
   <button class="tool" data-page="quiz">పరీక్షణ</button>
+  <button class="tool" data-page="dashboard">డాష్‌బోర్డ్</button>
 </nav>
 <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
 <div id="page" class="page" style="display:none"><div class="page-hd"><button class="pback" id="page-close">← సంభాషణ</button><h2 id="page-title"></h2></div><div class="page-body" id="page-body"></div></div>
@@ -629,6 +647,7 @@ function closePage(){
 
 
 function pageFor(name){
+  if(name==='dashboard') return pageDashboard();
   if(name==='saved') return pageSaved();
   if(name==='text') return pageText();
   if(name==='quiz') return pageQuiz();
@@ -1494,13 +1513,109 @@ function beautifyVerse(el){
 function askText(text){ var q=$('q'); if(!q) return; q.value=text; send(); }
 
 
+/* ===== access control ===== */
+var AUTH={user:null, role:null, allowed:{}, sb:null};
+function gateShow(msg){ var g=$('gate'); if(g) g.style.display='flex'; var e=$('gate-err'); if(e) e.textContent=msg||''; }
+function gateHide(){ var g=$('gate'); if(g) g.style.display='none'; }
+function authInit(){
+  if(!window.supabase){ gateShow('దయచేసి ఇంటర్నెట్ కనెక్షన్ చూసి మళ్లీ ప్రయత్నించండి.'); return null; }
+  AUTH.sb=window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  return AUTH.sb;
+}
+function loadPerms(){
+  return AUTH.sb.from('app_users').select('role_key,is_active').eq('user_id',AUTH.user.id).maybeSingle()
+    .then(function(res){
+      if(res.data) return res.data;
+      /* the sign-up trigger may still be writing the row */
+      return new Promise(function(r){ setTimeout(r,1500); })
+        .then(function(){ return AUTH.sb.from('app_users').select('role_key,is_active').eq('user_id',AUTH.user.id).maybeSingle(); })
+        .then(function(r2){ return r2.data; });
+    })
+    .then(function(row){
+      AUTH.role=(row&&row.role_key)||'guest';
+      return AUTH.sb.from('app_role_pages').select('page_key,allowed').eq('role_key',AUTH.role);
+    })
+    .then(function(r){
+      AUTH.allowed={};
+      (r.data||[]).forEach(function(x){ if(x.allowed) AUTH.allowed[x.page_key]=1; });
+    })
+    .catch(function(){ AUTH.role='guest'; AUTH.allowed={}; });
+}
+function applyPerms(){
+  document.querySelectorAll('#tools .tool').forEach(function(b){
+    b.style.display=AUTH.allowed[b.getAttribute('data-page')]?'':'none';
+  });
+  var first=null;
+  document.querySelectorAll('#tools .tool').forEach(function(b){ if(!first && b.style.display!=='none') first=b; });
+  if(first){ document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); }); first.classList.add('on'); }
+}
+function authBoot(){
+  if(!authInit()) return Promise.resolve(false);
+  var g=$('gate-google');
+  if(g) g.onclick=function(){
+    g.disabled=true; var e=$('gate-err'); if(e) e.textContent='';
+    AUTH.sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}})
+      .then(function(res){ if(res&&res.error){ g.disabled=false; gateShow(res.error.message); } });
+  };
+  return AUTH.sb.auth.getSession().then(function(s){
+    var sess=s&&s.data&&s.data.session;
+    if(!sess){ gateShow(''); return false; }
+    AUTH.user=sess.user;
+    return loadPerms().then(function(){ gateHide(); return true; });
+  }).catch(function(e){ gateShow(String(e&&e.message||e).slice(0,200)); return false; });
+}
+function pageDashboard(){
+  if(!AUTH.allowed['dashboard']){ openPage('డాష్‌బోర్డ్','<p class="sh-sub">ఈ పేజీకి అనుమతి లేదు.</p>'); return; }
+  openPage('డాష్‌బోర్డ్','<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> తెస్తోంది…</div>');
+  Promise.all([
+    AUTH.sb.from('app_roles').select('key,label,sort_order').order('sort_order'),
+    AUTH.sb.from('app_pages').select('key,label,sort_order').order('sort_order'),
+    AUTH.sb.from('app_role_pages').select('role_key,page_key,allowed')
+  ]).then(function(res){
+    var roles=res[0].data||[], pages=res[1].data||[], mat=res[2].data||[];
+    var look={}; mat.forEach(function(m){ look[m.role_key+'|'+m.page_key]=m.allowed; });
+    var html='<p class="sh-sub">పాత్రల ఆధారముగా ఏ పేజీలు కనిపించాలో టిక్ చేయండి. మార్పు వెంటనే సేవ్ అగును.</p>'
+      +'<div class="dash-wrap"><table class="dash"><thead><tr><th>పాత్ర</th>'
+      + pages.map(function(p){ return '<th>'+esc(p.label)+'</th>'; }).join('')+'</tr></thead><tbody>'
+      + roles.map(function(r){
+          return '<tr><th>'+esc(r.label)+'</th>'+pages.map(function(p){
+            return '<td><input type="checkbox" data-role="'+esc(r.key)+'" data-page="'+esc(p.key)+'"'+(look[r.key+'|'+p.key]?' checked':'')+'></td>';
+          }).join('')+'</tr>';
+        }).join('')
+      +'</tbody></table></div><p class="dash-note" id="dash-note"></p>';
+    openPage('డాష్‌బోర్డ్',html,function(){
+      document.querySelectorAll('.dash input[type=checkbox]').forEach(function(cb){
+        cb.onchange=function(){
+          var r=cb.getAttribute('data-role'), pg=cb.getAttribute('data-page'), v=cb.checked;
+          var n=$('dash-note'); if(n) n.textContent='సేవ్ అవుతోంది…';
+          AUTH.sb.from('app_role_pages').upsert({role_key:r,page_key:pg,allowed:v},{onConflict:'role_key,page_key'})
+            .then(function(res){
+              var nn=$('dash-note');
+              if(nn) nn.textContent=res.error?('లోపం: '+res.error.message):'సేవ్ అయింది ✓';
+              if(!res.error && r===AUTH.role){ if(v) AUTH.allowed[pg]=1; else delete AUTH.allowed[pg]; applyPerms(); }
+            });
+        };
+      });
+    });
+  }).catch(function(e){ openPage('డాష్‌బోర్డ్','<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
+}
 (function(){
   const C=window.BALA_CONFIG||{};
   const u=localStorage.getItem('bala_url')||C.supabaseUrl||PROJECT_URL;
   const k=localStorage.getItem('bala_key')||C.supabaseAnonKey||'';
-  if(u&&k){ CFG={url:u,key:k}; startChat(); }
-  else { connectScreen(u||'', k||'', 'Connection details were not found — enter the project URL and key to continue.'); }
+  if(!(u&&k)){ connectScreen(u||'', k||'', 'Connection details were not found — enter the project URL and key to continue.'); return; }
+  CFG={url:u,key:k};
+  authBoot().then(function(ok){ if(ok){ startChat(); applyPerms(); } });
 })();
 </script>
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <img src="auchithyam-logo.png" alt="" class="gate-logo">
+    <h2>తెలుగు సంప్రదాయ వ్యాకరణ అధ్యయనం</h2>
+    <p>కొనసాగించుటకు Google ఖాతాతో ప్రవేశించండి.</p>
+    <button id="gate-google" class="gate-btn" type="button">Google తో ప్రవేశించండి</button>
+    <p id="gate-err" class="gate-err"></p>
+  </div>
+</div>
 </body>
 </html>
