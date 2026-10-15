@@ -310,6 +310,23 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .page-body.chatpage{overflow:hidden;padding:0;display:flex;flex-direction:column}
 .page-body .chat{display:flex;flex-direction:column;flex:1;min-height:0}
 .page-body .chat .thread{flex:1;overflow-y:auto;justify-content:flex-start;padding:24px 0 6px;width:100%}
+/* A slim, quiet scrollbar everywhere the app scrolls, so the default
+   arrowed one never shows. */
+.page-body .chat .thread,.page-body,.gt-body,.page-wrap,.dash-wrap{
+  scrollbar-width:thin;
+  scrollbar-color:color-mix(in srgb,var(--ink) 20%,transparent) transparent}
+.page-body .chat .thread::-webkit-scrollbar,.page-body::-webkit-scrollbar,
+.gt-body::-webkit-scrollbar,.page-wrap::-webkit-scrollbar,.dash-wrap::-webkit-scrollbar{width:8px;height:8px}
+.page-body .chat .thread::-webkit-scrollbar-track,.page-body::-webkit-scrollbar-track,
+.gt-body::-webkit-scrollbar-track,.page-wrap::-webkit-scrollbar-track,.dash-wrap::-webkit-scrollbar-track{background:transparent}
+.page-body .chat .thread::-webkit-scrollbar-thumb,.page-body::-webkit-scrollbar-thumb,
+.gt-body::-webkit-scrollbar-thumb,.page-wrap::-webkit-scrollbar-thumb,.dash-wrap::-webkit-scrollbar-thumb{
+  background:color-mix(in srgb,var(--ink) 18%,transparent);border-radius:99px;border:2px solid transparent;background-clip:content-box}
+.page-body .chat .thread::-webkit-scrollbar-thumb:hover,.page-body::-webkit-scrollbar-thumb:hover,
+.gt-body::-webkit-scrollbar-thumb:hover,.page-wrap::-webkit-scrollbar-thumb:hover,.dash-wrap::-webkit-scrollbar-thumb:hover{
+  background:color-mix(in srgb,var(--ink) 34%,transparent);background-clip:content-box}
+.page-body .chat .thread::-webkit-scrollbar-button,.page-body::-webkit-scrollbar-button,
+.gt-body::-webkit-scrollbar-button{display:none;height:0;width:0}
 .page-body .composer{flex:none;border-top:1px solid var(--line);background:var(--bg);padding:12px 18px calc(14px + env(safe-area-inset-bottom))}
 .chat-hello{font-family:var(--font-tel);font-size:15px;color:var(--ink-faint);text-align:center;padding:4px 0 2px}
 .ansdoc{font-family:var(--font-tel);font-size:16px;line-height:1.8}
@@ -452,7 +469,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v43</span>
+  <span id="buildtag">build v44</span>
 </footer>
 
 <script>
