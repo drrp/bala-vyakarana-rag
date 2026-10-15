@@ -475,6 +475,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 
 .hist-search{display:flex;gap:8px;margin:4px 0 14px}
 .hist-search input{flex:1;font-family:var(--font-tel);font-size:14px;padding:10px 13px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink)}
+.hist-search button.danger{border-color:color-mix(in srgb,#c0392b 45%,transparent);color:#c0392b}
 .hist-search button{font-family:var(--font-tel);font-size:14px;padding:10px 16px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);cursor:pointer}
 .hist-search button:hover{border-color:var(--accent)}
 .saved-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;background:var(--surface-2)}
@@ -540,7 +541,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v50</span>
+  <span id="buildtag">build v51</span>
 </footer>
 
 <script>
@@ -681,7 +682,13 @@ function pageChatbot(){
       if(q) q.addEventListener('input',function(){ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,140)+'px'; });
       var sb=$('send'); if(sb) sb.onclick=function(){ trySend(); };
       var cl=$('clear');
-      if(cl){ cl.style.display='inline-block'; cl.onclick=function(){ clearChatStore(); HISTORY=[]; pageChatbot(); }; }
+      if(cl){
+        cl.style.display='inline-block';
+        cl.onclick=function(){
+          if(!window.confirm('ఈ సంభాషణను తొలగించాలా? చరిత్ర (చరిత్ర పేజీ) భద్రముగా ఉండును.')) return;
+          clearChatStore(); HISTORY=[]; pageChatbot();
+        };
+      }
       $('page-body').classList.add('chatpage');
       restoreChat();
       dbLoadChat().then(function(got){ if(got) restoreChat(); });
@@ -800,10 +807,12 @@ function pageFor(name){
 }
 
 
-var SAVED_KEY='bala_saved_v1';
-var CHAT_KEY='bala_chat_v1';          // the live conversation, kept until cleared
-function loadChat(){ try{ var o=JSON.parse(localStorage.getItem(CHAT_KEY)||'null'); return (o&&Array.isArray(o.h)&&o.h.length)?o:null; }catch(e){ return null; } }
-function saveChat(){ try{ localStorage.setItem(CHAT_KEY, JSON.stringify({h:HISTORY, t:Date.now()})); }catch(e){} dbSaveChat(); }
+/* Every key is namespaced by the signed-in account, so two people using the same
+   browser never see each other's conversation or history. */
+function savedKey(){ return 'bala_saved_v1' + (AUTH && AUTH.user ? ':' + AUTH.user.id : ''); }
+function chatKey(){ return 'bala_chat_v1' + (AUTH && AUTH.user ? ':' + AUTH.user.id : ''); }
+function loadChat(){ try{ var o=JSON.parse(localStorage.getItem(chatKey())||'null'); return (o&&Array.isArray(o.h)&&o.h.length)?o:null; }catch(e){ return null; } }
+function saveChat(){ try{ localStorage.setItem(chatKey(), JSON.stringify({h:HISTORY, t:Date.now()})); }catch(e){} dbSaveChat(); }
 /* The database is the source of truth so the conversation follows the account to any
    device; localStorage stays as a cache so the restore is instant. */
 var _dbT=null;
@@ -829,7 +838,7 @@ function dbLoadChat(){
       if(!row) return false;
       if(Array.isArray(row.messages) && row.messages.length){
         HISTORY=row.messages.slice();
-        try{ localStorage.setItem(CHAT_KEY, JSON.stringify({h:HISTORY,t:Date.now()})); }catch(e){}
+        try{ localStorage.setItem(chatKey(), JSON.stringify({h:HISTORY,t:Date.now()})); }catch(e){}
       }
       if(Array.isArray(row.history) && row.history.length) storeSaved(row.history.slice(0,300));
       return true;
@@ -839,10 +848,17 @@ function dbLoadChat(){
 function dbClearChat(){
   if(!AUTH.sb || !AUTH.user) return Promise.resolve();
   return AUTH.sb.from('app_chats')
-    .upsert({user_id:AUTH.user.id, messages:[], history:[], updated_at:new Date().toISOString()},{onConflict:'user_id'})
+    .upsert({user_id:AUTH.user.id, messages:[], history:loadSaved(), updated_at:new Date().toISOString()},{onConflict:'user_id'})
     .then(function(){}).catch(function(){});
 }
-function clearChatStore(){ try{ localStorage.removeItem(CHAT_KEY); }catch(e){} storeSaved([]); dbClearChat(); }
+function clearChatStore(){ try{ localStorage.removeItem(chatKey()); }catch(e){} dbClearChat(); }
+function clearHistoryStore(){
+  try{ localStorage.removeItem(savedKey()); }catch(e){}
+  if(AUTH.sb && AUTH.user){
+    AUTH.sb.from('app_chats').upsert({user_id:AUTH.user.id, messages:HISTORY, history:[],
+      updated_at:new Date().toISOString()},{onConflict:'user_id'}).then(function(){}).catch(function(){});
+  }
+}
 function recordQA(q,a){
   if(!q||!a) return;
   var arr=loadSaved(), i=-1;
@@ -864,8 +880,8 @@ function restoreChat(){
   var last=thread.lastChild; if(last && last.scrollIntoView) last.scrollIntoView({block:'end'});
   return true;
 }
-function loadSaved(){ try{ var a=JSON.parse(localStorage.getItem(SAVED_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
-function storeSaved(a){ try{ localStorage.setItem(SAVED_KEY, JSON.stringify(a)); }catch(e){} }
+function loadSaved(){ try{ var a=JSON.parse(localStorage.getItem(savedKey())||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function storeSaved(a){ try{ localStorage.setItem(savedKey(), JSON.stringify(a)); }catch(e){} }
 function saveAnswer(q, a, sb){
   var arr=loadSaved();
   var i=-1; for(var k=0;k<arr.length;k++){ if(arr[k].a===a){ i=k; break; } }
@@ -1637,7 +1653,8 @@ function pageSaved(){
     arr=all.filter(function(x){ return ((x.q||'')+' '+(x.a||'')).toLowerCase().indexOf(nq)>=0; });
   }
   var html='<p class="sh-sub">సంభాషణ చరిత్ర'+(all.length?(' ('+(q?(arr.length+' / '+all.length):all.length)+')'):'')+' — ఈ పరికరంలో నిల్వ ఉండును.</p>'
-    + '<div class="hist-search"><input id="hist-q" type="search" placeholder="ప్రశ్న లేదా సమాధానములో వెతకండి…" value="'+esc(q)+'" autocomplete="off"><button id="hist-go" type="button">వెతకండి</button></div>';
+    + '<div class="hist-search"><input id="hist-q" type="search" placeholder="ప్రశ్న లేదా సమాధానములో వెతకండి…" value="'+esc(q)+'" autocomplete="off"><button id="hist-go" type="button">వెతకండి</button>'
+    + (all.length ? '<button id="hist-clear" type="button" class="danger">చరిత్ర చెరిపివేయి</button>' : '') + '</div>';
   if(!all.length) html+='<p class="sh-sub">ఇంకా ఏమీ లేదు — చాట్‌లో ప్రశ్న అడిగిన ప్రతిదీ ఇక్కడ నమోదగును.</p>';
   else if(!arr.length) html+='<p class="sh-sub">"'+esc(q)+'" కు సరిపోలేదు.</p>';
   arr.forEach(function(x,i){
@@ -1648,8 +1665,12 @@ function pageSaved(){
       +'<div class="row2"><button data-act="expand">పూర్తిగా</button><button data-act="del">తొలగించు</button></div></div>';
   });
   openPage('సంభాషణ చరిత్ర', html, function(){
-    var hq=$('hist-q'), hg=$('hist-go');
+    var hq=$('hist-q'), hg=$('hist-go'), hc=$('hist-clear');
     if(hg) hg.onclick=function(){ pageSaved(); };
+    if(hc) hc.onclick=function(){
+      if(!window.confirm('మొత్తం చరిత్రను (సేవ్ చేసిన ప్రశ్న-సమాధానాలు) శాశ్వతముగా తొలగించాలా? ఇది వెనక్కి తీసుకోలేము.')) return;
+      clearHistoryStore(); pageSaved();
+    };
     if(hq){
       hq.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); pageSaved(); } });
       if(q && window.matchMedia('(pointer:fine)').matches) hq.focus();
