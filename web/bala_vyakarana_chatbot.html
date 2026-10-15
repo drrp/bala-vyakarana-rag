@@ -329,6 +329,8 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .gt-body::-webkit-scrollbar-button{display:none;height:0;width:0}
 .page-body .composer{flex:none;border-top:1px solid var(--line);background:var(--bg);padding:12px 18px calc(14px + env(safe-area-inset-bottom))}
 .chat-hello{font-family:var(--font-tel);font-size:15px;color:var(--ink-faint);text-align:center;padding:4px 0 2px}
+.limit-note{font-family:var(--font-tel);font-size:13.5px;color:#c0392b;text-align:center;margin:9px 0 0}
+.composer textarea:disabled,.composer .btn:disabled{opacity:.55;cursor:not-allowed}
 .ansdoc{font-family:var(--font-tel);font-size:16px;line-height:1.8}
 .ansdoc p{margin:0 0 12px}.ansdoc strong{color:var(--accent);font-weight:600}
 .ansdoc .hd{font-family:var(--font-tel-display);font-weight:600;color:var(--accent);margin:16px 0 8px}
@@ -469,7 +471,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v44</span>
+  <span id="buildtag">build v45</span>
 </footer>
 
 <script>
@@ -590,11 +592,11 @@ function startChat(){
    is re-rendered. */
 document.addEventListener('click', function(e){
   var t=e.target;
-  if(t && t.closest && t.closest('#send')){ e.preventDefault(); send(); }
+  if(t && t.closest && t.closest('#send')){ e.preventDefault(); trySend(); }
 });
 document.addEventListener('keydown', function(e){
   var t=e.target;
-  if(e.key==='Enter' && !e.shiftKey && t && t.id==='q'){ e.preventDefault(); send(); }
+  if(e.key==='Enter' && !e.shiftKey && t && t.id==='q'){ e.preventDefault(); trySend(); }
 });
 function pageChatbot(){
   if(!AUTH.allowed['chatbot']){ openPage('కొత్త సంభాషణ','<p class="sh-sub">ఈ పేజీకి అనుమతి లేదు.</p>'); return; }
@@ -603,12 +605,14 @@ function pageChatbot(){
     + '<div class="composer"><div class="in">'
     +   '<textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'
     +   '<button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'
+    +   '<p class="limit-note" id="limit-note" style="display:none"></p>'
     + '</div></div>',
     function(){
       var q=$('q');
       if(q) q.addEventListener('input',function(){ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,140)+'px'; });
-      var sb=$('send'); if(sb) sb.onclick=function(){ send(); };
+      var sb=$('send'); if(sb) sb.onclick=function(){ trySend(); };
       $('page-body').classList.add('chatpage');
+      loadLimitState();
       if(window.matchMedia('(pointer:fine)').matches && q) q.focus();
     });
 }
@@ -1601,6 +1605,50 @@ function setHdrVar(){
   var h=document.querySelector('header.top');
   if(h) document.documentElement.style.setProperty('--hdr', h.offsetHeight+'px');
 }
+/* ---- per-user chat allowance ---- */
+var CHAT_LIMIT={limit:null, used:0, loaded:false};
+function limitMsg(){
+  return 'మీ ప్రశ్నల పరిమితి (' + CHAT_LIMIT.limit + ') చేరింది. నిర్వాహకుడు పరిమితి పెంచిన తరువాత మళ్లీ ప్రయత్నించండి.';
+}
+function limitReached(){
+  return CHAT_LIMIT.limit != null && CHAT_LIMIT.used >= CHAT_LIMIT.limit;
+}
+function applyLimitState(){
+  var q=$('q'), sb=$('send'), note=$('limit-note');
+  var blocked=limitReached();
+  if(q) q.disabled=blocked;
+  if(sb) sb.disabled=blocked;
+  if(note){
+    note.textContent = blocked ? limitMsg() : '';
+    note.style.display = blocked ? 'block' : 'none';
+  }
+}
+function loadLimitState(){
+  if(!AUTH.sb || !AUTH.user) return Promise.resolve();
+  return AUTH.sb.from('app_users').select('chat_limit,chat_used').eq('user_id',AUTH.user.id).maybeSingle()
+    .then(function(r){
+      var row=r && r.data;
+      CHAT_LIMIT.limit = row ? row.chat_limit : null;
+      CHAT_LIMIT.used  = row ? (row.chat_used||0) : 0;
+      CHAT_LIMIT.loaded = true;
+      applyLimitState();
+    })
+    .catch(function(){});
+}
+/* Ask the server before spending a question; it counts and answers. */
+function trySend(){
+  if(CHAT_LIMIT.loaded && limitReached()){ applyLimitState(); return; }
+  AUTH.sb.rpc('app_chat_allow').then(function(r){
+    var row = Array.isArray(r.data) ? r.data[0] : r.data;
+    if(row){
+      CHAT_LIMIT.limit = row.lim;
+      CHAT_LIMIT.used  = row.used;
+      CHAT_LIMIT.loaded = true;
+    }
+    if(row && row.allowed === false){ applyLimitState(); return; }
+    send();
+  }).catch(function(){ send(); });   /* never block chat on a limiter error */
+}
 function fillWho(){
   var u=AUTH.user||{}; var md=u.user_metadata||{};
   var nm=md.full_name||md.name||u.email||'';
@@ -1641,7 +1689,7 @@ function authBoot(){
     if(!sess){ gateShow(''); return false; }
     AUTH.user=sess.user;
     return loadPerms().then(function(){
-      gateHide(); fillWho();
+      gateHide(); fillWho(); loadLimitState();
       var lo=$('logout');
       if(lo) lo.onclick=function(){ lo.disabled=true; AUTH.sb.auth.signOut().then(function(){ location.reload(); }); };
       return true;
@@ -1655,7 +1703,7 @@ function pageDashboard(){
     AUTH.sb.from('app_roles').select('key,label,sort_order').order('sort_order'),
     AUTH.sb.from('app_pages').select('key,label,sort_order').order('sort_order'),
     AUTH.sb.from('app_role_pages').select('role_key,page_key,allowed'),
-    AUTH.sb.from('app_users').select('user_id,email,name,picture,role_key,is_active,last_login').order('created_at'),
+    AUTH.sb.from('app_users').select('user_id,email,name,picture,role_key,is_active,last_login,chat_limit,chat_used').order('created_at'),
     AUTH.sb.from('app_invites').select('email,role_key').order('created_at')
   ]).then(function(res){
     var roles=res[0].data||[], pages=res[1].data||[], mat=res[2].data||[], users=res[3].data||[], invites=res[4].data||[];
@@ -1670,9 +1718,10 @@ function pageDashboard(){
           }).join('')+'</tr>';
         }).join('')
       +'</tbody></table></div><p class="dash-note" id="dash-note"></p>'
-      +'<div class="sect">వినియోగదారులు ('+users.length+')</div>'
+      +'<div class="sect">వినియోగదారులు ('+users.length+')'
+      +' <button class="pback" type="button" id="reset-usage">వాడినవి సున్నా చేయి</button></div>'
       +'<div class="dash-wrap"><table class="dash"><thead><tr>'
-      +'<th>వినియోగదారు</th><th>ఇమెయిల్</th><th>పాత్ర</th><th>క్రియాశీలం</th></tr></thead><tbody>'
+      +'<th>వినియోగదారు</th><th>ఇమెయిల్</th><th>పాత్ర</th><th>ప్రశ్నల పరిమితి</th><th>వాడినవి</th><th>క్రియాశీలం</th></tr></thead><tbody>'
       +(users.length? users.map(function(u){
           return '<tr>'
             +'<td class="u-cell">'+(u.picture?'<img class="u-pic" src="'+esc(u.picture)+'" alt="">':'<span class="u-pic"></span>')
@@ -1681,6 +1730,14 @@ function pageDashboard(){
             +'<td><select data-user="'+esc(u.user_id)+'">'
             + roles.map(function(r){ return '<option value="'+esc(r.key)+'"'+(r.key===u.role_key?' selected':'')+'>'+esc(r.label)+'</option>'; }).join('')
             +'</select></td>'
+            +'<td><select data-limit="'+esc(u.user_id)+'">'
+            +   [['','అపరిమితం'],['5','5'],['10','10'],['25','25'],['50','50'],['100','100'],['500','500']]
+                .map(function(o){ var v=(u.chat_limit==null?'':String(u.chat_limit));
+                  return '<option value="'+o[0]+'"'+(v===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('')
+            +   (u.chat_limit!=null && ['5','10','25','50','100','500'].indexOf(String(u.chat_limit))===-1
+                  ? '<option value="'+esc(String(u.chat_limit))+'" selected>'+esc(String(u.chat_limit))+'</option>' : '')
+            +'</select></td>'
+            +'<td>'+(u.chat_used||0)+(u.chat_limit!=null?(' / '+u.chat_limit):'')+'</td>'
             +'<td><input type="checkbox" data-active="'+esc(u.user_id)+'"'+(u.is_active?' checked':'')+'></td>'
             +'</tr>';
         }).join('') : '<tr><td colspan="4" class="dash-note">ఇంకా ఎవరూ ప్రవేశించలేదు.</td></tr>')
@@ -1748,6 +1805,32 @@ function pageDashboard(){
           var em=b.getAttribute('data-uninvite'); note3('తొలగిస్తోంది…');
           AUTH.sb.from('app_invites').delete().eq('email',em)
             .then(function(res){ note3(res.error?('లోపం: '+res.error.message):'తొలగించబడింది ✓'); if(!res.error) pageDashboard(); });
+        };
+      });
+      var rb=$('reset-usage');
+      if(rb) rb.onclick=function(){
+        rb.disabled=true; note2('సున్నా చేస్తోంది…');
+        AUTH.sb.rpc('app_reset_chat_used')
+          .then(function(res){
+            rb.disabled=false;
+            if(res.error) return note2('లోపం: '+niceErr(res.error.message));
+            note2('అందరి లెక్క సున్నా అయింది ✓');
+            CHAT_LIMIT.used=0; applyLimitState(); pageDashboard();
+          });
+      };
+      document.querySelectorAll('.dash select[data-limit]').forEach(function(sel){
+        sel.onchange=function(){
+          var v=sel.value; note2('సేవ్ అవుతోంది…');
+          AUTH.sb.from('app_users').update({chat_limit: v==='' ? null : Number(v)})
+            .eq('user_id', sel.getAttribute('data-limit'))
+            .then(function(res){
+              if(res.error) return note2('లోపం: '+niceErr(res.error.message));
+              note2('పరిమితి సేవ్ అయింది ✓');
+              if(AUTH.user && sel.getAttribute('data-limit')===AUTH.user.id){
+                CHAT_LIMIT.limit = v==='' ? null : Number(v);
+                applyLimitState();
+              }
+            });
         };
       });
       document.querySelectorAll('.dash input[data-active]').forEach(function(cb){
