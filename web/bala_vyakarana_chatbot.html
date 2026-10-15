@@ -439,18 +439,20 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   </div>
 </header>
 <nav class="tools" id="tools" style="display:none">
-  <button class="tool" data-page="chat">సంభాషణ</button>
+  <button class="tool" data-page="chat">స్వాగతం</button>
   <button class="tool" data-page="saved">సేవ్</button>
   <button class="tool" data-page="text">గ్రంథము</button>
   <button class="tool" data-page="quiz">పరీక్షణ</button>
   <button class="tool" data-page="dashboard">డాష్‌బోర్డ్</button>
 </nav>
 <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
-<div id="page" class="page" style="display:none"><div class="page-hd"><button class="pback" id="page-close">← సంభాషణ</button><h2 id="page-title"></h2></div><div class="page-body" id="page-body"></div></div>
+<div id="page" class="page" style="display:none"><div class="page-hd"><button class="pback" id="page-close">← స్వాగతం</button><h2 id="page-title"></h2></div><div class="page-body" id="page-body"></div></div>
 <footer class="foot">
   <span class="tel">Developed by శతావధాని డా. రాంభట్ల పార్వతీశ్వర శర్మ</span>
   <span class="sep">·</span>
   <span>© 2026</span>
+  <span class="sep">·</span>
+  <span id="buildtag">build v43</span>
 </footer>
 
 <script>
@@ -534,7 +536,7 @@ function connectScreen(u,k,msg,type){
   };
 }
 
-/* The landing page (సంభాషణ) shows the invocation verses only. The chatbot
+/* The landing page (స్వాగతం) shows the invocation verses only. The chatbot
    interface itself lives on its own page, కొత్త సంభాషణ. */
 var WELCOME_HTML = '<div class="empty" id="welcome">'+
         '<div class="vwrap">'+
