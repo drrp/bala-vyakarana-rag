@@ -542,7 +542,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v54</span>
+  <span id="buildtag">build v55</span>
 </footer>
 
 <script>
@@ -1644,6 +1644,45 @@ function qzAnswer(btn, idx){
     +'<button class="btn primary" id="qz-next">'+(QZ.i+1>=QZ.qs.length?'ఫలితము చూడు':'తర్వాత ప్రశ్న →')+'</button>';
   $('qz-next').onclick=function(){ QZ.i++; QZ.done=false; qzRender(); };
 }
+/* ===== per-user activity (admin only) =====
+   Reads the conversation already stored in app_chats; no new data is collected. */
+function pageUserActivity(uid, who){
+  if(AUTH.role !== 'admin'){ openPage('వినియోగదారు క్రియాశీలత','<p class="sh-sub">నిర్వాహక అనుమతి అవసరం.</p>'); return; }
+  openPage('క్రియాశీలత — '+who, '<p class="sh-sub">లోడ్ అవుతోంది…</p>', function(){
+    AUTH.sb.from('app_chats').select('history,updated_at').eq('user_id',uid).maybeSingle()
+      .then(function(r){
+        var row=r && r.data;
+        var list=(row && Array.isArray(row.history)) ? row.history.slice() : [];
+        var q=($('act-q') && $('act-q').value || '').trim();
+        var shown=list;
+        if(q){
+          var nq=q.toLowerCase();
+          shown=list.filter(function(x){ return ((x.q||'')+' '+(x.a||'')).toLowerCase().indexOf(nq)>=0; });
+        }
+        var html='<p class="sh-sub">'+esc(who)+' — మొత్తం '+list.length+' ప్రశ్నలు'
+               + (row && row.updated_at ? (' · చివరి క్రియ: '+esc(new Date(row.updated_at).toLocaleString())) : '')
+               + '</p>'
+          + '<div class="hist-search"><input id="act-q" type="search" placeholder="ఈ వినియోగదారు ప్రశ్నలలో వెతకండి…" value="'+esc(q)+'" autocomplete="off">'
+          + '<button id="act-go" type="button">వెతకండి</button></div>';
+        if(!list.length) html+='<p class="sh-sub">ఈ వినియోగదారు ఇంకా ఏమీ అడగలేదు.</p>';
+        else if(!shown.length) html+='<p class="sh-sub">"'+esc(q)+'" కు సరిపోలేదు.</p>';
+        shown.forEach(function(x){
+          html+='<div class="saved-item"><div class="sq">'+esc(x.q||'(ప్రశ్న నమోదు కాలేదు)')+'</div>'
+            + '<div class="sa">'+esc(String(x.a||'')).slice(0,420)+(String(x.a||'').length>420?'…':'')+'</div>'
+            + '<div class="meta">'+esc(x.ts ? new Date(x.ts).toLocaleString() : '')+'</div></div>';
+        });
+        openPage('క్రియాశీలత — '+who, html, function(){
+          var g=$('act-go'), i=$('act-q');
+          if(g) g.onclick=function(){ pageUserActivity(uid, who); };
+          if(i){
+            i.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); pageUserActivity(uid, who); } });
+            if(q && window.matchMedia('(pointer:fine)').matches) i.focus();
+          }
+        });
+      })
+      .catch(function(e){ openPage('క్రియాశీలత — '+who, '<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e))+'</p>'); });
+  });
+}
 function pageSaved(){
   var all=loadSaved();
   var q=($('hist-q')&&$('hist-q').value||'').trim();
@@ -2007,7 +2046,7 @@ function pageDashboard(){
       +'<div class="sect">వినియోగదారులు ('+users.length+')'
       +' <button class="pback" type="button" id="reset-usage">వాడినవి సున్నా చేయి</button></div>'
       +'<div class="dash-wrap"><table class="dash"><thead><tr>'
-      +'<th>వినియోగదారు</th><th>ఇమెయిల్</th><th>పాత్ర</th><th>ప్రశ్నల పరిమితి</th><th>వాడినవి</th><th>క్రియాశీలం</th></tr></thead><tbody>'
+      +'<th>వినియోగదారు</th><th>ఇమెయిల్</th><th>పాత్ర</th><th>ప్రశ్నల పరిమితి</th><th>వాడినవి</th><th>క్రియాశీలం</th><th></th></tr></thead><tbody>'
       +(users.length? users.map(function(u){
           return '<tr>'
             +'<td class="u-cell">'+(u.picture?'<img class="u-pic" src="'+esc(u.picture)+'" alt="">':'<span class="u-pic"></span>')
@@ -2025,6 +2064,7 @@ function pageDashboard(){
             +'</select></td>'
             +'<td>'+(u.chat_used||0)+(u.chat_limit!=null?(' / '+u.chat_limit):'')+'</td>'
             +'<td><input type="checkbox" data-active="'+esc(u.user_id)+'"'+(u.is_active?' checked':'')+'></td>'
+            +'<td><button class="pback" type="button" data-act="'+esc(u.user_id)+'" data-who="'+esc(u.name||u.email||'')+'">క్రియాశీలత</button></td>'
             +'</tr>';
         }).join('') : '<tr><td colspan="4" class="dash-note">ఇంకా ఎవరూ ప్రవేశించలేదు.</td></tr>')
       +'</tbody></table></div><p class="dash-note" id="dash-note2"></p>'
@@ -2092,6 +2132,9 @@ function pageDashboard(){
           AUTH.sb.from('app_invites').delete().eq('email',em)
             .then(function(res){ note3(res.error?('లోపం: '+res.error.message):'తొలగించబడింది ✓'); if(!res.error) pageDashboard(); });
         };
+      });
+      document.querySelectorAll('[data-act]').forEach(function(b){
+        b.onclick=function(){ pageUserActivity(b.getAttribute('data-act'), b.getAttribute('data-who')); };
       });
       var rb=$('reset-usage');
       if(rb) rb.onclick=function(){
