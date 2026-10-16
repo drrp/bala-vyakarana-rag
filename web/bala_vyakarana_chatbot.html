@@ -542,7 +542,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v55</span>
+  <span id="buildtag">build v56</span>
 </footer>
 
 <script>
@@ -1668,10 +1668,18 @@ function pageUserActivity(uid, who){
         else if(!shown.length) html+='<p class="sh-sub">"'+esc(q)+'" కు సరిపోలేదు.</p>';
         shown.forEach(function(x){
           html+='<div class="saved-item"><div class="sq">'+esc(x.q||'(ప్రశ్న నమోదు కాలేదు)')+'</div>'
-            + '<div class="sa">'+esc(String(x.a||'')).slice(0,420)+(String(x.a||'').length>420?'…':'')+'</div>'
-            + '<div class="meta">'+esc(x.ts ? new Date(x.ts).toLocaleString() : '')+'</div></div>';
+            + '<div class="sa">'+esc(String(x.a||''))+'</div>'
+            + '<div class="meta">'+esc(x.ts ? new Date(x.ts).toLocaleString() : '')+'</div>'
+            + '<div class="row2"><button data-exp="1" type="button">పూర్తిగా చూపు</button></div></div>';
         });
         openPage('క్రియాశీలత — '+who, html, function(){
+          document.querySelectorAll('#page-body [data-exp]').forEach(function(b){
+            b.onclick=function(){
+              var sa=b.closest('.saved-item').querySelector('.sa');
+              sa.classList.toggle('open');
+              b.textContent = sa.classList.contains('open') ? 'ముడుచు' : 'పూర్తిగా చూపు';
+            };
+          });
           var g=$('act-go'), i=$('act-q');
           if(g) g.onclick=function(){ pageUserActivity(uid, who); };
           if(i){
@@ -1698,7 +1706,7 @@ function pageSaved(){
   else if(!arr.length) html+='<p class="sh-sub">"'+esc(q)+'" కు సరిపోలేదు.</p>';
   arr.forEach(function(x,i){
     html+='<div class="saved-item" data-i="'+i+'"><div class="sq">'+esc(x.q||'(ప్రశ్న నమోదు కాలేదు)')+'</div>'
-      +'<div class="sa">'+esc(x.a).slice(0,420)+(x.a.length>420?'…':'')+'</div>'
+      +'<div class="sa">'+esc(x.a)+'</div>'
       +'<div class="meta">'+esc(new Date(x.ts).toLocaleString())+'</div>'
       +'<textarea placeholder="మీ నోట్…">'+esc(x.note||'')+'</textarea>'
       +'<div class="row2"><button data-act="expand">పూర్తిగా</button><button data-act="del">తొలగించు</button></div></div>';
@@ -1717,7 +1725,10 @@ function pageSaved(){
     document.querySelectorAll('#page-body .saved-item').forEach(function(el){
       var i=+el.getAttribute('data-i');
       el.querySelector('textarea').addEventListener('change',function(ev){ var a2=loadSaved(); if(a2[i]){ a2[i].note=ev.target.value; storeSaved(a2); } });
-      el.querySelector('[data-act="expand"]').onclick=function(){ el.querySelector('.sa').classList.toggle('open'); };
+      el.querySelector('[data-act="expand"]').onclick=function(){
+        var sa=el.querySelector('.sa'); sa.classList.toggle('open');
+        this.textContent = sa.classList.contains('open') ? 'ముడుచు' : 'పూర్తిగా';
+      };
       el.querySelector('[data-act="del"]').onclick=function(){ var a2=loadSaved(); a2.splice(i,1); storeSaved(a2); pageSaved(); };
     });
   });
