@@ -558,7 +558,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v58</span>
+  <span id="buildtag">build v59</span>
 </footer>
 
 <script>
@@ -589,6 +589,7 @@ const md = s => {
     } else out.push(html);
   };
   const closeAll = () => { while (stack.length) closeOne(); };
+  let inRupa = false;   // inside a రూపసాధన section
   const item = (type, level, text) => {
     level = Math.min(level, 2);
     while (stack.length > level+1) closeOne();
@@ -600,9 +601,26 @@ const md = s => {
   (s==null?'':String(s)).split('\n').forEach(raw => {
     const line = raw.replace(/\s+$/,'');
     let m;
-    if ((m = line.match(/^(\s*)[-*•]\s+(.*)$/))) { item('ul', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
+    if ((m = line.match(/^(\s*)[-*•]\s+(.*)$/))) {
+      if (inRupa) {
+        const body = m[2].replace(/^▸\s*/, '');
+        const parts = body.split(/\s*→\s*/);
+        const head = parts[0];
+        const tail = parts.slice(1).join(' → ');
+        const rm = head.match(/^(.*?)\s*(\([^)]*\))\s*$/);
+        const rule = rm ? rm[1] : head;
+        const ref = rm ? rm[2] : '';
+        const isBase = !tail && !ref;
+        closeAll();
+        out.push('<div class="rupastep' + (isBase ? ' base' : '') + '">' +
+          '<div class="rp-rule">' + inline(rule) +
+          (ref ? '<span class="rp-ref">' + esc(ref) + '</span>' : '') + '</div>' +
+          (tail ? '<div class="rp-out">' + inline(tail) + '</div>' : '') + '</div>');
+        return;
+      }
+      item('ul', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
     if ((m = line.match(/^(\s*)\d+[.)]\s+(.*)$/))) { item('ol', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
-    if ((m = line.match(/^(#{1,6})\s+(.*)$/))) { closeAll(); out.push('<div class="hd h'+Math.min(m[1].length,3)+'">'+inline(m[2])+'</div>'); return; }
+    if ((m = line.match(/^(#{1,6})\s+(.*)$/))) { closeAll(); inRupa = /రూపసాధన/.test(m[2]); out.push('<div class="hd h'+Math.min(m[1].length,3)+'">'+inline(m[2])+'</div>'); return; }
     // రూపసాధన step: '▸ rule (ref) → result'. Consecutive steps form a chain.
     if ((m = line.match(/^\s*▸\s*(.*)$/))) {
       const body = m[1];
