@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ఛంక్‌లు — సవరణ</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#fff; --surface-2:#f1f3f6; --line:#dfe3e9;
+    --ink:#111827; --ink-dim:#6b7280; --accent:#1d4ed8; --ok:#0f7b3f; --err:#b91c1c;
+    --font-tel:"Noto Sans Telugu","Gautami","Nirmala UI",system-ui,sans-serif;
+    --font-ui:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px}
+  header{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);
+    padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:600}
+  header .sp{flex:1}
+  .wrap{display:grid;grid-template-columns:380px 1fr;gap:14px;padding:14px;align-items:start}
+  @media (max-width:860px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .card h2{margin:0;padding:10px 14px;font-size:13px;font-weight:600;color:var(--ink-dim);
+    border-bottom:1px solid var(--line);background:var(--surface-2);text-transform:uppercase;letter-spacing:.04em}
+  .pad{padding:12px 14px}
+  input,select,textarea,button{font:inherit;color:inherit}
+  input[type=search],input[type=text],select{width:100%;padding:9px 11px;border:1px solid var(--line);
+    border-radius:9px;background:var(--surface);outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,78,216,.12)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .row>*{flex:1;min-width:120px}
+  button{cursor:pointer;border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:9px}
+  button:hover{background:var(--surface-2)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.primary:hover{filter:brightness(1.08)}
+  button.primary:disabled{opacity:.5;cursor:default}
+  #list{max-height:66vh;overflow:auto}
+  .item{padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+  .item:hover{background:var(--surface-2)}
+  .item.sel{background:#e8efff;box-shadow:inset 3px 0 0 var(--accent)}
+  .item .meta{font-size:11.5px;color:var(--ink-dim);display:flex;gap:8px;margin-bottom:3px}
+  .item .meta .d{color:var(--accent);font-weight:600}
+  .item .txt{font-family:var(--font-tel);font-size:14px;line-height:1.6;color:var(--ink);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  textarea{width:100%;min-height:44vh;padding:14px;border:1px solid var(--line);border-radius:10px;
+    font-family:var(--font-tel);font-size:17px;line-height:1.9;resize:vertical;background:var(--surface)}
+  .hint{font-size:12.5px;color:var(--ink-dim);margin:8px 0 0}
+  .toast{position:fixed;right:16px;bottom:16px;padding:11px 16px;border-radius:10px;color:#fff;
+    background:var(--ok);opacity:0;transform:translateY(8px);transition:.18s;pointer-events:none;font-weight:600}
+  .toast.show{opacity:1;transform:none}
+  .toast.err{background:var(--err)}
+  .empty{padding:22px 14px;color:var(--ink-dim);font-size:13.5px}
+  .count{font-size:12.5px;color:var(--ink-dim);padding:8px 14px;border-bottom:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <h1>బాల వ్యాకరణము — ఛంక్‌ల సవరణ</h1>
+  <span class="sp"></span>
+  <span id="who" style="font-size:12.5px;color:var(--ink-dim)"></span>
+  <button id="reload">తిరిగి తెమ్ము</button>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>ఛంక్‌లు</h2>
+    <div class="pad">
+      <input type="search" id="q" placeholder="పదము వెతకండి… (శబ్దము, పుట, పుస్తకము)">
+      <div class="row" style="margin-top:8px">
+        <select id="scope">
+          <option value="pdf">వ్యాఖ్యానములు (pdf)</option>
+          <option value="bala_vyakarana">సూత్రములు (bala_vyakarana)</option>
+          <option value="">అన్నియు</option>
+        </select>
+      </div>
+    </div>
+    <div class="count" id="count">—</div>
+    <div id="list"><div class="empty">వెతకండి…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>సవరణ</h2>
+    <div class="pad">
+      <div class="row">
+        <input type="text" id="meta" readonly placeholder="ఛంక్‌ను ఎన్నుకోండి" style="flex:3">
+      </div>
+      <textarea id="body" placeholder="ఇక్కడ వచనము…" style="margin-top:10px"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="save" disabled>సేవ్ చేయి</button>
+        <button id="revert" disabled>వెనక్కు</button>
+      </div>
+      <p class="hint">సేవ్ చేసిన వెంటనే ఛంక్ నవీకరణమగును. <b>norm</b> తనంతట తానే సరిపోవును, <b>embedding</b> తొలగింపబడును — కావున
+        <a href="bala_vyakarana_embed.html">ఇంబెడ్ పుట</a> ఒకసారి నడపవలెను.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const C = window.BALA_CONFIG || {};
+const URL_ = (localStorage.getItem('bala_url') || C.supabaseUrl || '').replace(/\/$/, '');
+const ANON = localStorage.getItem('bala_key') || C.supabaseAnonKey || '';
+
+// Writes go through the signed-in session, never the publishable key: that key is
+// in this page's own JavaScript, so an anon write policy would let any visitor
+// rewrite the corpus. Supabase stores the session under sb-<ref>-auth-token.
+function sessionToken() {
+  try {
+    const ref = (URL_.match(/https:\/\/([^.]+)\./) || [])[1];
+    for (const k of Object.keys(localStorage)) {
+      if (k.indexOf('sb-') === 0 && k.indexOf('auth-token') > 0) {
+        const v = JSON.parse(localStorage.getItem(k));
+        const t = v && (v.access_token || (v.currentSession && v.currentSession.access_token));
+        if (t) return t;
+      }
+      if (ref && k.indexOf('sb-' + ref) === 0) {
+        const v = JSON.parse(localStorage.getItem(k));
+        if (v && v.access_token) return v.access_token;
+      }
+    }
+  } catch (e) {}
+  return '';
+}
+const KEY = ANON;   // reads use the publishable key; writes swap in the session
+
+let rows = [], sel = null, orig = '';
+
+function toast(msg, err) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (err ? ' err' : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => { t.className = 'toast' + (err ? ' err' : ''); }, 2600);
+}
+
+function hdrs(extra) {
+  return Object.assign({ apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, extra || {});
+}
+
+async function load() {
+  if (!URL_ || !KEY) { $('list').innerHTML = '<div class="empty">config.js లో supabaseUrl, supabaseAnonKey లేవు.</div>'; return; }
+  $('list').innerHTML = '<div class="empty">తెమ్ముచున్నది…</div>';
+  const scope = $('scope').value;
+  const q = $('q').value.trim();
+  let url = URL_ + '/rest/v1/bala_vyakarana_chunks?select=id,source,doc,ref,content&order=doc,ref,start_pos&limit=300';
+  if (scope) url += '&source=eq.' + encodeURIComponent(scope);
+  if (q) url += '&content=ilike.*' + encodeURIComponent(q) + '*';
+  try {
+    const res = await fetch(url, { headers: hdrs() });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0, 160));
+    rows = await res.json();
+    render();
+  } catch (e) {
+    $('list').innerHTML = '<div class="empty">' + String(e.message || e) + '</div>';
+    $('count').textContent = '—';
+  }
+}
+
+function render() {
+  $('count').textContent = rows.length + ' ఛంక్‌లు' + (rows.length >= 300 ? ' (300 వరకు చూపబడినవి)' : '');
+  if (!rows.length) { $('list').innerHTML = '<div class="empty">ఏదియు లభించలేదు.</div>'; return; }
+  $('list').innerHTML = rows.map(r =>
+    '<div class="item' + (sel && sel.id === r.id ? ' sel' : '') + '" data-id="' + r.id + '">' +
+      '<div class="meta"><span class="d">' + esc(r.doc || '') + '</span><span>' + esc(r.ref || '') + '</span><span>#' + r.id + '</span></div>' +
+      '<div class="txt">' + esc(r.content || '') + '</div>' +
+    '</div>').join('');
+}
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function pick(id) {
+  const r = rows.find(x => String(x.id) === String(id));
+  if (!r) return;
+  sel = r; orig = r.content || '';
+  $('meta').value = (r.doc || '') + ' · ' + (r.ref || '') + ' · #' + r.id + ' · ' + (r.source || '');
+  $('body').value = orig;
+  $('save').disabled = false;
+  $('revert').disabled = false;
+  render();
+  $('body').focus();
+}
+
+async function save() {
+  if (!sel) return;
+  const content = $('body').value;
+  if (content === orig) { toast('మార్పు లేదు'); return; }
+  const tok = sessionToken();
+  if (!tok) { toast('సవరణకై సైన్-ఇన్ అవసరము — మొదట చాట్‌బాట్ పుటలో ప్రవేశించండి.', true); return; }
+  $('save').disabled = true;
+  try {
+    const res = await fetch(URL_ + '/rest/v1/bala_vyakarana_chunks?id=eq.' + sel.id, {
+      method: 'PATCH',
+      headers: { apikey: ANON, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json',
+                 Prefer: 'return=representation' },
+      body: JSON.stringify({ content })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0, 200));
+    const out = await res.json();
+    const updated = out && out[0];
+    sel.content = content;
+    if (updated) { sel.norm = updated.norm; }
+    orig = content;
+    toast('సేవ్ అయినది · norm నవీకరణ, embedding తొలగింపు');
+  } catch (e) {
+    toast(String(e.message || e), true);
+  } finally {
+    $('save').disabled = false;
+    render();
+  }
+}
+
+$('list').addEventListener('click', e => {
+  const it = e.target.closest('.item');
+  if (it) pick(it.dataset.id);
+});
+$('save').onclick = save;
+$('revert').onclick = () => { if (sel) { $('body').value = orig; toast('వెనక్కు'); } };
+$('reload').onclick = load;
+$('scope').onchange = load;
+let tq;
+$('q').oninput = () => { clearTimeout(tq); tq = setTimeout(load, 350); };
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); save(); }
+});
+$('who').textContent = sessionToken() ? 'సైన్-ఇన్ ✓' : 'సైన్-ఇన్ లేదు — చదవవచ్చు, సవరింపలేరు';
+load();
+</script>
+</body>
+</html>
