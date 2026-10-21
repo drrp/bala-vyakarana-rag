@@ -178,6 +178,21 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .bub .sutraline{margin:20px 0;padding:16px 20px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
 .bub .sutraline .sutra-txt{font-family:var(--font-tel);font-size:19px;font-weight:400;color:#1d4ed8;line-height:1.9}
 .bub .sutraline .sutra-ref{display:block;margin-top:7px;text-align:right;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.02em;color:var(--ink-dim)}
+/* రూపసాధన — each step of a derivation as a node on a chain.
+   The model emits lines beginning with '▸ rule → result'. */
+.bub .rupaflow{margin:14px 0 20px 6px}
+.bub .rupastep{position:relative;margin:0 0 10px 12px;padding:12px 16px 12px 22px;border-left:2px solid var(--line);background:var(--surface-2);border-radius:0 10px 10px 0}
+.bub .rupastep:last-child{margin-bottom:0}
+.bub .rupastep:before{content:'';position:absolute;left:-8px;top:17px;width:13px;height:13px;border-radius:50%;background:#1d4ed8;box-shadow:0 0 0 3px var(--surface)}
+.bub .rupastep.base:before{background:var(--ink-dim)}
+.bub .rupastep .rp-rule{font-family:var(--font-tel);font-size:16.5px;line-height:1.8;color:var(--ink)}
+.bub .rupastep .rp-rule .rp-ref{display:block;margin-top:4px;text-align:right;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.02em;color:var(--ink-dim)}
+.bub .rupastep .rp-out{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-family:var(--font-tel);font-size:17.5px;color:#1d4ed8}
+:root[data-theme="dark"] .bub .rupastep .rp-out{color:#8ab4ff}
+:root[data-theme="dark"] .bub .rupastep:before{background:#8ab4ff}
+.bub .rupastep:after{content:'▼';position:absolute;left:1px;bottom:-11px;font-size:9px;line-height:1;color:var(--line)}
+.bub .rupastep:last-child:after{content:''}
+
 :root[data-theme="dark"] .bub .sutraline .sutra-txt{color:#8ab4ff}
 .bub ul,.bub ol{margin:8px 0 12px;padding-left:24px}
 .bub li{margin:7px 0;font-family:var(--font-tel);font-size:17.5px;line-height:1.85}
@@ -542,7 +557,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v56</span>
+  <span id="buildtag">build v57</span>
 </footer>
 
 <script>
@@ -587,6 +602,25 @@ const md = s => {
     if ((m = line.match(/^(\s*)[-*•]\s+(.*)$/))) { item('ul', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
     if ((m = line.match(/^(\s*)\d+[.)]\s+(.*)$/))) { item('ol', Math.floor(m[1].replace(/\t/g,'  ').length/2), m[2]); return; }
     if ((m = line.match(/^(#{1,6})\s+(.*)$/))) { closeAll(); out.push('<div class="hd h'+Math.min(m[1].length,3)+'">'+inline(m[2])+'</div>'); return; }
+    // రూపసాధన step: '▸ rule (ref) → result'. Consecutive steps form a chain.
+    if ((m = line.match(/^\s*▸\s*(.*)$/))) {
+      const body = m[1];
+      const parts = body.split(/\s*→\s*/);
+      const head = parts[0];
+      const tail = parts.slice(1).join(' → ');
+      // pull a trailing (…) reference out of the rule line
+      const rm = head.match(/^(.*?)\s*(\([^)]*\))\s*$/);
+      const rule = rm ? rm[1] : head;
+      const ref = rm ? rm[2] : '';
+      const isBase = !tail && !ref;
+      closeAll();
+      out.push('<div class="rupastep' + (isBase ? ' base' : '') + '">' +
+        '<div class="rp-rule">' + inline(rule) +
+        (ref ? '<span class="rp-ref">' + esc(ref) + '</span>' : '') + '</div>' +
+        (tail ? '<div class="rp-out">' + inline(tail) + '</div>' : '') +
+        '</div>');
+      return;
+    }
     // A sutra on its own line with its reference -> blue text, reference right-aligned below.
     // Runs BEFORE the plain-quote rule, and accepts a leading '>' so a quoted sutra gets the same look.
     if (!/^\s*([-*•]|\d+[.)]|#)/.test(line) && (m = line.match(/^\s*>?\s*(.*?)\s*\(((?:బా|ప్రౌ|సాహి|సాహిత్య)[^)]*)\)\s*$/))) {
