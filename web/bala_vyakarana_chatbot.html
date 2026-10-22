@@ -571,7 +571,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v63</span>
+  <span id="buildtag">build v64</span>
 </footer>
 
 <script>
@@ -583,66 +583,6 @@ const NOT_FOUND_TEMPLATE = '"<పదము>" కు సంబంధించి�
 const FN = "/functions/v1/bala-rag";
 const $ = id => document.getElementById(id);
 const app = $('app');
-/* ---- RTS transliteration (ఆంధ్ర లిప్యంతరణ) ------------------------------------
-   Type in English letters, read Telugu. Longest match wins, so "kh" is ఖ not క+హ
-   and "aa" is ఆ not అ+అ. A consonant takes the virama ్, which a following vowel
-   then replaces with its sign — so "ka" is క, "kaa" is కా, "ki" is కి. A vowel with
-   no consonant before it stands alone as a full letter, so "a" is అ but "ka" is క.
-   Anusvara M, visarga H and the ఁ mark (~) attach without touching the virama. */
-const RTS_CONS = {
-  ksh:'క్ష', gn:'జ్ఞ',
-  kh:'ఖ', gh:'ఘ', ch:'ఛ', jh:'ఝ', Th:'ఠ', Dh:'ఢ', th:'థ', dh:'ధ',
-  ph:'ఫ', bh:'భ', sh:'ష', Sh:'ష', S:'ష', ng:'ఙ', ny:'ఞ',
-  k:'క', g:'గ', c:'చ', j:'జ', T:'ట', D:'డ', N:'ణ', t:'త', d:'ద', n:'న',
-  p:'ప', b:'బ', m:'మ', y:'య', r:'ర', l:'ల', v:'వ', s:'స', h:'హ',
-  L:'ళ', R:'ఱ', q:'క', x:'క్ష', z:'జ'
-};
-const RTS_VOWEL = {
-  aa:'ఆ', ai:'ఐ', au:'ౌ', ii:'ఈ', ee:'ఏ', oo:'ఓ', uu:'ఊ',
-  a:'అ', i:'ఇ', u:'ఉ', e:'ఎ', o:'ఒ',
-  // the capitals are the long vowels, as in the usual Telugu RTS
-  A:'ఆ', I:'ఈ', U:'ఊ', E:'ఏ', O:'ఓ', aa_:'ఆ'
-};
-const RTS_SIGN = {
-  aa:'ా', ai:'ై', au:'ౌ', ii:'ీ', ee:'ే', oo:'ో', uu:'ూ',
-  a:'', i:'ి', u:'ు', e:'ె', o:'ొ',
-  A:'ా', I:'ీ', U:'ూ', E:'ే', O:'ో'
-};
-const RTS_KEYS = Object.keys(RTS_CONS).concat(Object.keys(RTS_VOWEL))
-  .sort((x, y) => y.length - x.length);
-
-function rts(text) {
-  let out = '', i = 0;
-  const low = text;
-  while (i < low.length) {
-    const ch = low[i];
-    if (ch === 'M') { out += 'ం'; i++; continue; }
-    if (ch === 'H') { out += 'ః'; i++; continue; }
-    if (ch === '~') { out += 'ఁ'; i++; continue; }
-    if (ch === ' ') { out += ' '; i++; continue; }
-    let hit = null;
-    for (const k of RTS_KEYS) {
-      if (low.startsWith(k, i)) { hit = k; break; }
-    }
-    if (!hit) { out += ch; i++; continue; }
-    if (RTS_CONS[hit]) {
-      // consonant: virama now, replaced by a sign if a vowel follows
-      let cons = RTS_CONS[hit], j = i + hit.length;
-      let v = null;
-      for (const vk of Object.keys(RTS_VOWEL).sort((a, b) => b.length - a.length)) {
-        if (low.startsWith(vk, j)) { v = vk; break; }
-      }
-      if (v) { out += cons + RTS_SIGN[v]; i = j + v.length; }
-      else { out += cons + '\u0CCD'; i = j; }
-    } else {
-      out += RTS_VOWEL[hit]; i += hit.length;
-    }
-  }
-  // NOTE: no trailing-virama strip. Removing it loses the ్ of a half-typed
-  // conjunct, and since the buffer is rebuilt on every keystroke that loss is
-  // permanent — "amma" came out as అమమఅ rather than అమ్మ.
-  return out;
-}
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const md = s => {
   const inline = t => esc(t)
@@ -776,7 +716,7 @@ var WELCOME_HTML = '<div class="empty" id="welcome">'+
 var WELCOME_HOME = WELCOME_HTML.replace(' id="welcome"','');
 var COMPOSER_HTML = '<div class="composer"><div class="in">'+
       '<textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'+
-      '<button type="button" id="rtsbtn" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer">ఆం</button><button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'+
+      '<button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'+
     '</div>'+
     '<button class="egline" id="egline" type="button" onclick="useEg()"></button>'+
     '</div>';
@@ -806,7 +746,7 @@ function pageChatbot(){
     '<div class="chat"><div class="thread" id="thread"><div class="chat-hello" id="welcome">మీ ప్రశ్న అడగండి.</div></div></div>'
     + '<div class="composer"><div class="in">'
     +   '<textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'
-    +   '<button type="button" id="rtsbtn" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;flex:none">ఆం</button><button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'
+    +   '<button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'
     +   '<p class="limit-note" id="limit-note" style="display:none"></p>'
     + '</div></div>',
     function(){
@@ -2331,45 +2271,6 @@ function pageDashboard(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 
-/* RTS input. The roman buffer is built from KEYSTROKES and is the only source of
-   truth; the field merely displays rts(buffer). Re-reading the field cannot work,
-   because Telugu cannot be converted back to roman — doing so lost the virama and
-   turned "amma" into అమమఅ. Everything is delegated, since the composer is injected
-   after load and the page carries two composer definitions. */
-(function () {
-  let on = localStorage.getItem('bala_rts') !== '0';
-  let buf = '';
-  function paint() {
-    const b = document.getElementById('rtsbtn'); if (!b) return;
-    b.style.background = on ? 'var(--accent)' : 'var(--surface)';
-    b.style.color = on ? '#fff' : 'inherit';
-    b.style.borderColor = on ? 'var(--accent)' : 'var(--line)';
-  }
-  function draw(q) { if (q) q.value = on ? rts(buf) : buf; }
-
-  document.addEventListener('keydown', e => {
-    if (!on || !e.target || e.target.id !== 'q' || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === 'Backspace') { buf = buf.slice(0, -1); e.preventDefault(); draw(e.target); return; }
-    if (e.key === 'Enter') return;                       // let the send handler have it
-    if (e.key.length === 1) { buf += e.key; e.preventDefault(); draw(e.target); }
-  });
-  // paste, or anything that bypasses keydown: adopt the field only if it is plain ascii
-  document.addEventListener('input', e => {
-    if (!on || !e.target || e.target.id !== 'q') return;
-    if (/^[\x20-\x7E]*$/.test(e.target.value)) { buf = e.target.value; draw(e.target); }
-    else { draw(e.target); }
-  });
-  document.addEventListener('click', e => {
-    const b = e.target && e.target.closest && e.target.closest('#rtsbtn');
-    if (!b) return;
-    on = !on;
-    localStorage.setItem('bala_rts', on ? '1' : '0');
-    const q = document.getElementById('q');
-    draw(q); paint(); if (q) q.focus();
-  });
-  new MutationObserver(paint).observe(document.body, { childList: true, subtree: true });
-  paint();
-})();
 
 </script>
 <div id="gate" class="gate">
