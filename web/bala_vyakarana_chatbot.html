@@ -571,7 +571,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v78</span>
+  <span id="buildtag">build v79</span>
 </footer>
 
 <script>
@@ -1505,7 +1505,7 @@ var QZ_CURATED=[
  {q:'వర్ణాధిక్యమును ఏమందురు?', opts:['ఆదేశము','లోపము','ఆగమము','సంశ్లేషము'], ans:'ఆగమము'},
  {q:'క్రియా వాచకమునకు గల సంజ్ఞ ఏది?', opts:['నామము','ధాతువు','విభక్తి','కళ'], ans:'ధాతువు'}
 ];
-function qzBuild(fid, n){
+function qzBuild(fid, n, level){
   var items=SB.i.filter(function(x){ return x.type==='sutra' && (!fid || x.pariccheda_id===fid) && tc(x.text); });
   var allCh=SB.p.map(function(c){ return c.title_te||c.id; });
   var pool={form:[], vib:[], lak:[], def:[], lang:[], sadhu:[], sutra:[], cur:[]};
@@ -1706,8 +1706,19 @@ function qzBuild(fid, n){
     });
   }
 
-  /* interleave so no single type dominates */
-  var order=['cur','sadhu','def','sutra','lang','vib','lak','form'], out=[], guard=0;
+  /* Difficulty. The pool keys are ordered by how much the reader has to do:
+     సులభ is recall (a marker, a case, a name), మధ్యమ is understanding (a definition,
+     a language judgement), కఠిన is working it out (choosing the right form, matching a
+     sutra to its example). A level takes its own kinds first, then borrows the rest
+     only if its own pool cannot fill the quiz. */
+  var LEVELS={
+    'easy':  ['cur','vib','lak'],
+    'medium':['def','lang','sadhu'],
+    'hard':  ['form','sutra']
+  };
+  var own=LEVELS[level]||[], rest=['cur','sadhu','def','sutra','lang','vib','lak','form']
+             .filter(function(k){ return own.indexOf(k)<0; });
+  var order=own.concat(rest), out=[], guard=0;
   while(out.length<n && guard++<20000){
     var added=false;
     for(var k=0;k<order.length && out.length<n;k++){ var p=pool[order[k]]; if(p.length){ out.push(p.shift()); added=true; } }
@@ -1745,12 +1756,22 @@ function pageQuiz(){
     var html='<div class="sb-search">'
       +'<div class="sb-srow"><select id="qz-ch">'+opts+'</select><select id="qz-n">'
       +'<option value="20">20 ప్రశ్నలు</option><option value="30">30 ప్రశ్నలు</option><option value="50">50 ప్రశ్నలు</option><option value="100">100 ప్రశ్నలు</option></select>'
+      +'<select id="qz-d">'
+      +'<option value="easy">సులభము</option>'
+      +'<option value="medium">మధ్యమము</option>'
+      +'<option value="hard">కఠినము</option>'
+      +'<option value="">అన్నియు</option></select>'
       +'<button id="qz-go">ప్రారంభించు</button></div></div>'
       +'<p class="sh-sub">గ్రంథము నుండి స్వయంగా తయారగు ప్రశ్నలు — సూత్రములు, ఉదాహరణలు, పరిచ్ఛేదములు. సమాధానము నొక్కగానే సరి/తప్పు తెలియును.</p>'
       +'<p class="sh-sub"><button class="pback" id="qz-clear">చరిత్ర చెరిపివేయి</button> <span id="qz-clearmsg"></span></p>'
       +'<div id="qz-body"></div>';
     openPage('పరీక్షణ', html, function(){
-      $('qz-go').onclick=function(){ qzStart($('qz-ch').value, Number($('qz-n').value)||20); };
+      var dsel=$('qz-d');
+      try{ var lv=localStorage.getItem('bala_qz_level'); if(lv) dsel.value=lv; }catch(e){}
+      $('qz-go').onclick=function(){
+        try{ localStorage.setItem('bala_qz_level', dsel.value); }catch(e){}
+        qzStart($('qz-ch').value, Number($('qz-n').value)||20, dsel.value);
+      };
       $('qz-clear').onclick=function(){
         try{ localStorage.removeItem(QZ_SEEN_KEY); }catch(e){}
         $('qz-clearmsg').textContent='చెరిపివేయఁబడినది — ఇపుడు అన్ని ప్రశ్నలు తిరిగి వచ్చును.';
@@ -1758,17 +1779,18 @@ function pageQuiz(){
     });
   }).catch(function(e){ openPage('పరీక్షణ','<p style="color:#c0392b">లోపం: '+esc(String(e&&e.message||e).slice(0,200))+'</p>'); });
 }
-function qzStart(fid, n){
-  var qs=qzBuild(fid, n), b=$('qz-body');
+function qzStart(fid, n, level){
+  var qs=qzBuild(fid, n, level), b=$('qz-body');
   if(!qs.length){ b.innerHTML='<p class="sh-sub">ఈ ఎంపికకు ప్రశ్నలు సిద్ధం కాలేదు — వేరొక పరిచ్ఛేదము ప్రయత్నించండి.</p>'; return; }
-  QZ={qs:qs, i:0, score:0, done:false};
+  QZ={qs:qs, i:0, score:0, done:false, level:level||''};
   qzRender();
 }
 function qzRender(){
   var b=$('qz-body'); if(!b) return;
   if(QZ.i>=QZ.qs.length){
     var pc=Math.round(QZ.score*100/QZ.qs.length);
-    b.innerHTML='<div class="qz-score">మీ స్కోరు: <b>'+QZ.score+' / '+QZ.qs.length+'</b> ('+pc+'%)<br>'
+    var lvname={easy:'సులభము',medium:'మధ్యమము',hard:'కఠినము'};
+    b.innerHTML='<div class="qz-score">మీ స్కోరు: <b>'+QZ.score+' / '+QZ.qs.length+'</b> ('+pc+'%)<br><span class="sh-sub">'+esc(lvname[QZ.level]||'అన్ని స్థాయిలు')+'</span><br>'
       +'<button class="btn primary" id="qz-again">మళ్లీ ప్రయత్నించు</button></div>';
     $('qz-again').onclick=function(){ pageQuiz(); };
     return;
