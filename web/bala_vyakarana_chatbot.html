@@ -529,7 +529,6 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 <link rel="icon" href="icons/icon-192.png">
 <script src="pwa.js" defer></script>
 <script src="config.js"></script>
-<script src="translit.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
@@ -572,7 +571,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v77</span>
+  <span id="buildtag">build v78</span>
 </footer>
 
 <script>
@@ -584,6 +583,96 @@ const NOT_FOUND_TEMPLATE = '"<పదము>" కు సంబంధించి�
 const FN = "/functions/v1/bala-rag";
 const $ = id => document.getElementById(id);
 const app = $('app');
+// ---- Lekhini converter, self-contained -------------------------------------
+// Keys from lekhini.org's published table. Longest match wins. Rules that the
+// first attempt got wrong, all now explicit:
+//   * a consonant with no vowel after it is the plain letter (inherent a), not
+//     consonant+virama — unless another consonant follows, which forms a conjunct;
+//   * n/m before a DIFFERENT consonant, or at the end of a word, is the anusvara,
+//     but n/m before ITSELF is a geminate conjunct (అమ్మ, ఉన్నారు);
+//   * @m and @M both give ఁ;  @h gives ః;
+//   * ^ is a virama, and is ignored where one is already present.
+var VI = '\u0C4D';
+var LK_CONS = {
+  'ksh':'క్ష','~zh':'ఴ','~tr':'ౚ','~si':'౷','~sr':'౜',
+  '~l':'ఌ','~L':'ౡ','~m':'ఙ','~n':'ఞ','~c':'ౘ','~j':'ౙ','~r':'ఱ','~z':'ఴ',
+  'kh':'ఖ','gh':'ఘ','ch':'చ','Ch':'ఛ','Sh':'ష','jh':'ఝ','th':'థ','dh':'ధ','ph':'ఫ','bh':'భ',
+  'sh':'ష','lh':'ళ','Th':'ఠ','Dh':'ఢ',
+  'K':'ఖ','G':'ఘ','C':'ఛ','J':'ఝ','T':'ట','D':'డ','N':'ణ',
+  't':'త','d':'ద','n':'న','p':'ప','P':'ఫ','f':'ఫ','b':'బ','B':'భ','m':'మ',
+  'y':'య','r':'ర','l':'ల','v':'వ','w':'వ','S':'శ','s':'స','h':'హ','L':'ళ','x':'క్ష',
+  'k':'క','g':'గ','c':'చ','j':'జ'
+};
+var LK_VOW = {
+  'ou':'ఔ','au':'ఔ','ai':'ఐ','ee':'ఈ','ii':'ఈ','ia':'ఈ','uu':'ఊ','oo':'ఊ',
+  'ea':'ఏ','ae':'ఏ','oa':'ఓ','oe':'ఓ','aa':'ఆ','Ru':'ౠ',
+  'A':'ఆ','I':'ఈ','U':'ఊ','E':'ఏ','O':'ఓ','R':'ఋ',
+  'a':'అ','i':'ఇ','u':'ఉ','e':'ఎ','o':'ఒ'
+};
+var LK_SIGN = {
+  'ou':'ౌ','au':'ౌ','ai':'ై','ee':'ీ','ii':'ీ','ia':'ీ','uu':'ూ','oo':'ూ',
+  'ea':'ే','ae':'ే','oa':'ో','oe':'ో','aa':'ా','Ru':'ౄ',
+  'A':'ా','I':'ీ','U':'ూ','E':'ే','O':'ో','R':'ృ',
+  'a':'','i':'ి','u':'ు','e':'ె','o':'ొ'
+};
+function keysOf(m){ return Object.keys(m).sort(function(a,b){ return b.length-a.length; }); }
+var CONS_K = keysOf(LK_CONS), VOW_K = keysOf(LK_VOW);
+
+function lekhini(text){
+  var out = '', i = 0;
+  function matchCons(p){ for (var k=0;k<CONS_K.length;k++) if (text.substr(p,CONS_K[k].length)===CONS_K[k]) return CONS_K[k]; return null; }
+  function matchVow(p){ for (var k=0;k<VOW_K.length;k++) if (text.substr(p,VOW_K[k].length)===VOW_K[k]) return VOW_K[k]; return null; }
+  var lastWasVirama = false, lastWasVowel = false;
+
+  while (i < text.length) {
+    var ch = text[i];
+    if (text.substr(i,2)==='@m' || text.substr(i,2)==='@M') { out += '\u0C01'; i+=2; lastWasVirama=false; lastWasVowel=true; continue; }
+    if (text.substr(i,2)==='@h') { out += '\u0C03'; i+=2; lastWasVirama=false; lastWasVowel=true; continue; }
+    if (text.substr(i,3)==='~||') { out += '\u0965'; i+=3; lastWasVirama=false; continue; }
+    if (text.substr(i,2)==='~|') { out += '\u0964'; i+=2; lastWasVirama=false; continue; }
+    if (text.substr(i,2)==='$$') { out += '\u20B9'; i+=2; lastWasVirama=false; continue; }
+    if (ch==='^') { if (!lastWasVirama) { out += VI; lastWasVirama = true; } i+=1; continue; }
+    if (ch==='&') { i+=1; continue; }                    // combiner: suppress anusvara only
+    if (ch==='M') { out += '\u0C02'; i+=1; lastWasVirama=false; lastWasVowel=true; continue; }
+    if (ch===' '||ch==='\n'||ch==='\t') { out += ch; i+=1; lastWasVirama=false; continue; }
+    if (!/[A-Za-z~$]/.test(ch)) { out += ch; i+=1; lastWasVirama=false; continue; }
+
+    var c = matchCons(i);
+    if (c) {
+      var cons = LK_CONS[c], j = i + c.length;
+      // n/m: geminate -> conjunct; before another consonant -> anusvara; at end -> anusvara
+      // look past an & when deciding what follows
+      var jj = (text[j] === '&') ? j + 1 : j;
+      if (c === 'n' || c === 'm') {
+        var nx = matchCons(jj);
+        if (nx === c && text[j] !== '&') { out += cons + VI; i = j; lastWasVirama = true; continue; }
+        if (text[j] === '^') { out += cons + VI; i = j; lastWasVirama = true; continue; }
+        var vAfter = matchVow(jj);
+        // an & suppresses the anusvara and forces the conjunct
+        if (nx && !vAfter && text[j] !== '&') { out += '\u0C02'; i = j; lastWasVirama = false; continue; }
+        if (jj >= text.length && lastWasVowel) {        // word-final n or m, after a vowel
+          out += (c === 'm') ? '\u0C02' : cons + VI;   // m -> anusvara, n -> న్
+          i = j; lastWasVirama = (c !== 'm'); continue;
+        }
+      }
+      var v = matchVow(j);
+      if (v !== null) { out += cons + LK_SIGN[v]; i = j + v.length; lastWasVirama = false; lastWasVowel = true; }
+      else {
+        var j2 = (text[j] === '&') ? j + 1 : j;
+        var nx2 = matchCons(j2);
+        if (nx2 || text[j] === '^') { out += cons + VI; lastWasVirama = true; lastWasVowel = false; }
+        else { out += cons; lastWasVirama = false; lastWasVowel = true; }   // inherent a
+        i = j;
+      }
+      continue;
+    }
+    var vv = matchVow(i);
+    if (vv !== null) { out += LK_VOW[vv]; i += vv.length; lastWasVirama = false; lastWasVowel = true; continue; }
+    out += ch; i += 1; lastWasVirama = false;
+  }
+  return out;
+}
+
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const md = s => {
   const inline = t => esc(t)
@@ -716,7 +805,7 @@ var WELCOME_HTML = '<div class="empty" id="welcome">'+
       '<p style="margin-top:14px"><a href="rts_guide.html" target="_blank" rel="noopener" style="display:inline-block;padding:9px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);text-decoration:none;color:var(--accent);font-weight:600;font-size:14px">⌨ తెలుగు టైపింగ్ మార్గదర్శిని</a></p></div>';
 var WELCOME_HOME = WELCOME_HTML.replace(' id="welcome"','');
 var COMPOSER_HTML = '<div class="composer"><div class="in">'+
-      '<label id="rtswrap" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును (ఁ కొఱకు Z)" style="display:flex;align-items:center;gap:5px;flex:none;cursor:pointer;font-size:12.5px;color:var(--ink-dim);user-select:none"><input type="checkbox" id="rtsbox" checked style="cursor:pointer;accent-color:var(--accent)"><span>A-అ</span></label><textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'+
+      '<label id="rtswrap" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="display:flex;align-items:center;gap:5px;flex:none;cursor:pointer;font-size:12.5px;color:var(--ink-dim);user-select:none"><input type="checkbox" id="rtsbox" checked style="cursor:pointer;accent-color:var(--accent)"><span>A-అ</span></label><textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'+
       '<button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'+
     '</div>'+
     '<button class="egline" id="egline" type="button" onclick="useEg()"></button>'+
@@ -2276,38 +2365,12 @@ function pageDashboard(){
 
 (function () {
   const S = window.Converter;
-  const MODE = 'tr1';
-  // expose the working scheme under a neutral name
-  try { if (S && S.schemes && S.schemes['the working scheme'] && !S.schemes.tr1) S.schemes.tr1 = S.schemes['the working scheme']; } catch (e) {}
   let on = localStorage.getItem('bala_rts_on') !== '0';
   let roman = '', rendered = '', busy = false;
 
   function conv() {
-    if (!S || !on) return roman;
-    try {
-      // The converter has no spelling for several Telugu letters, so each gets a
-      // sentinel it passes through untouched and is swapped here. R is already ఱ and
-      // L already ళ, so ఋ ౠ ఌ ౡ take V W Q X. @h and @m are accepted as alternative
-      // spellings for విసర్గ and అరసున్న. The virama is built at runtime and the
-      // fixed swaps use split/join: an escape inside a regex literal does not
-      // survive the build intact, which silently disabled these rules.
-      const VI = String.fromCharCode(0x0C4D);
-      let t = S.t(roman, MODE, 'telugu').split(String.fromCharCode(0x200C)).join('')
-                                            .split(String.fromCharCode(0x200D)).join('');
-      t = t.split('@' + String.fromCharCode(0x0C39) + VI).join(String.fromCharCode(0x0C03));
-      t = t.split('@' + String.fromCharCode(0x0C2E) + VI).join(String.fromCharCode(0x0C01));
-      t = t.split(VI + 'V').join(String.fromCharCode(0x0C43));   // consonant + V -> ృ
-      t = t.replace(/V/g, String.fromCharCode(0x0C0B))
-           .replace(/W/g, String.fromCharCode(0x0C60))
-           .replace(/Q/g, String.fromCharCode(0x0C0C))
-           .replace(/X/g, String.fromCharCode(0x0C61))
-           .replace(/Z/g, String.fromCharCode(0x0C01))
-           .replace(/\$/g, String.fromCharCode(0x0C58))
-           .replace(/\^/g, String.fromCharCode(0x0C59));
-      t = t.split(String.fromCharCode(0x0964)).join('.');        // danda -> full stop
-      t = t.split(String.fromCharCode(0x0965)).join('..');       // double danda
-      return t.replace(/[\u0900-\u097F]/g, '');                  // no Devanagari survives
-    } catch (e) { return roman; }
+    if (!on) return roman;
+    try { return lekhini(roman); } catch (e) { return roman; }
   }
   function paint() {
     document.querySelectorAll('#rtsbox').forEach(el => { el.checked = on; });
