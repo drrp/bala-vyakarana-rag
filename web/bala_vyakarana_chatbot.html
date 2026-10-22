@@ -572,7 +572,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v66</span>
+  <span id="buildtag">build v67</span>
 </footer>
 
 <script>
@@ -717,7 +717,7 @@ var WELCOME_HTML = '<div class="empty" id="welcome">'+
 var WELCOME_HOME = WELCOME_HTML.replace(' id="welcome"','');
 var COMPOSER_HTML = '<div class="composer"><div class="in">'+
       '<textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'+
-      '<button class="btn primary" <select id="rtssel" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;flex:none"><option value="">ఆం✕</option><option value="itrans">ITRANS</option><option value="iast">IAST</option><option value="hk">HK</option></select>id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'+
+      '<select id="rtssel" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;flex:none"><option value="">ఆం✕</option><option value="itrans">ITRANS</option><option value="iast">IAST</option><option value="hk">HK</option></select><button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'+
     '</div>'+
     '<button class="egline" id="egline" type="button" onclick="useEg()"></button>'+
     '</div>';
@@ -747,7 +747,7 @@ function pageChatbot(){
     '<div class="chat"><div class="thread" id="thread"><div class="chat-hello" id="welcome">మీ ప్రశ్న అడగండి.</div></div></div>'
     + '<div class="composer"><div class="in">'
     +   '<textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'
-    +   '<button class="btn primary" <select id="rtssel" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;flex:none"><option value="">ఆం✕</option><option value="itrans">ITRANS</option><option value="iast">IAST</option><option value="hk">HK</option></select>id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'
+    +   '<select id="rtssel" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;flex:none"><option value="">ఆం✕</option><option value="itrans">ITRANS</option><option value="iast">IAST</option><option value="hk">HK</option></select><button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'
     +   '<p class="limit-note" id="limit-note" style="display:none"></p>'
     + '</div></div>',
     function(){
@@ -2278,9 +2278,9 @@ function pageDashboard(){
    The field displays Telugu; a parallel roman buffer is the single source of truth.
    On each input event the buffer is updated from the DIFF between what we last
    rendered and what the field now holds — never by re-reading the field, because
-   Telugu cannot be converted back to roman. That was the flaw in the first attempt:
-   re-reading turned "amma" into అమమఅ. Nothing is intercepted at keydown, so the
-   page's own Enter-to-send handler is untouched. */
+   Telugu cannot be converted back to roman; doing that turned "amma" into అమమఅ.
+   Nothing is intercepted at keydown, so the page's own Enter-to-send handler is
+   untouched — intercepting it is what broke typing on the previous attempt. */
 (function () {
   const S = window.Sanscript;
   let scheme = localStorage.getItem('bala_scheme') || '';
@@ -2306,7 +2306,6 @@ function pageDashboard(){
     try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) {}
     busy = false;
   }
-
   document.addEventListener('input', e => {
     if (busy || !e.target || e.target.id !== 'q' || !scheme) return;
     const now = e.target.value;
@@ -2320,7 +2319,6 @@ function pageDashboard(){
     }
     redraw(e.target);
   });
-
   document.addEventListener('change', e => {
     if (!e.target || e.target.id !== 'rtssel') return;
     scheme = e.target.value;
@@ -2330,7 +2328,6 @@ function pageDashboard(){
     paint();
     if (q) q.focus();
   });
-
   new MutationObserver(paint).observe(document.body, { childList: true, subtree: true });
   paint();
 })();
