@@ -571,7 +571,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v61</span>
+  <span id="buildtag">build v62</span>
 </footer>
 
 <script>
@@ -804,7 +804,7 @@ function pageChatbot(){
     '<div class="chat"><div class="thread" id="thread"><div class="chat-hello" id="welcome">మీ ప్రశ్న అడగండి.</div></div></div>'
     + '<div class="composer"><div class="in">'
     +   '<textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'
-    +   '<button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'
+    +   '<button type="button" id="rtsbtn" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;flex:none">ఆం</button><button class="btn primary" id="send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg></button>'
     +   '<p class="limit-note" id="limit-note" style="display:none"></p>'
     + '</div></div>',
     function(){
@@ -2329,37 +2329,40 @@ function pageDashboard(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 
-/* RTS input: the field holds Telugu, a parallel buffer holds what was typed, so
-   the transliteration is always recomputed from the roman form rather than from
-   its own output. Toggling off restores the roman text so nothing is lost. */
+/* RTS input: the field holds Telugu, a parallel buffer holds what was typed, so the
+   transliteration is always recomputed from the roman form rather than from its own
+   output. Everything is delegated, because the composer is injected after load and
+   there are two composer definitions in the page — binding by id at load time misses
+   whichever one is actually on screen. */
 (function () {
-  const q = document.getElementById('q');
-  const b = document.getElementById('rtsbtn');
-  if (!q || !b) return;
   let on = localStorage.getItem('bala_rts') !== '0';
   let buf = '';
+  const rtsBtn = () => document.getElementById('rtsbtn');
   function paint() {
+    const b = rtsBtn(); if (!b) return;
     b.style.background = on ? 'var(--accent)' : 'var(--surface)';
     b.style.color = on ? '#fff' : 'inherit';
     b.style.borderColor = on ? 'var(--accent)' : 'var(--line)';
   }
-  function sync() { if (on) q.value = rts(buf); }
-  q.addEventListener('input', () => {
-    if (!on) return;
-    // recompute the roman buffer from what is now in the field
-    buf = q.value;
-    sync();
+  document.addEventListener('input', e => {
+    if (!on || !e.target || e.target.id !== 'q') return;
+    buf = e.target.value;
+    e.target.value = rts(buf);
   });
-  q.addEventListener('keydown', e => {
-    if (!on) return;
-    if (e.key === 'Backspace' && q.selectionStart === q.value.length) { buf = buf.slice(0, -1); }
+  document.addEventListener('keydown', e => {
+    if (!on || !e.target || e.target.id !== 'q') return;
+    if (e.key === 'Backspace' && e.target.selectionStart === e.target.value.length) buf = buf.slice(0, -1);
   });
-  b.addEventListener('click', () => {
+  document.addEventListener('click', e => {
+    const b = e.target && e.target.closest && e.target.closest('#rtsbtn');
+    if (!b) return;
     on = !on;
     localStorage.setItem('bala_rts', on ? '1' : '0');
-    if (!on) { q.value = buf; } else { buf = q.value; sync(); }
-    paint(); q.focus();
+    const q = document.getElementById('q');
+    if (q) { if (!on) { q.value = buf; } else { buf = q.value; q.value = rts(buf); } }
+    paint(); if (q) q.focus();
   });
+  new MutationObserver(paint).observe(document.body, { childList: true, subtree: true });
   paint();
 })();
 
