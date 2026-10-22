@@ -572,7 +572,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v72</span>
+  <span id="buildtag">build v73</span>
 </footer>
 
 <script>
@@ -2284,7 +2284,13 @@ function pageDashboard(){
 
   function conv() {
     if (!S || !on) return roman;
-    try { return S.t(roman, SCHEME, 'telugu').replace(/Z/g, '\u0C01'); } catch (e) { return roman; }
+    try {
+      return S.t(roman, SCHEME, 'telugu')
+        .replace(/\u0964/g, '.')            // danda -> ordinary full stop
+        .replace(/\u0965/g, '..')           // double danda -> two stops
+        .replace(/[\u0900-\u097F]/g, '')   // nothing Devanagari may survive
+        .replace(/Z/g, '\u0C01');
+    } catch (e) { return roman; }
   }
   function paint() {
     document.querySelectorAll('#rtsbox').forEach(el => { el.checked = on; });
