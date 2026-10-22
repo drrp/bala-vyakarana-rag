@@ -571,7 +571,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v62</span>
+  <span id="buildtag">build v63</span>
 </footer>
 
 <script>
@@ -638,8 +638,10 @@ function rts(text) {
       out += RTS_VOWEL[hit]; i += hit.length;
     }
   }
-  // a trailing virama with nothing after it is noise while typing
-  return out.replace(/\u0CCD$/, '');
+  // NOTE: no trailing-virama strip. Removing it loses the ్ of a half-typed
+  // conjunct, and since the buffer is rebuilt on every keystroke that loss is
+  // permanent — "amma" came out as అమమఅ rather than అమ్మ.
+  return out;
 }
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const md = s => {
@@ -2329,29 +2331,33 @@ function pageDashboard(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
 
-/* RTS input: the field holds Telugu, a parallel buffer holds what was typed, so the
-   transliteration is always recomputed from the roman form rather than from its own
-   output. Everything is delegated, because the composer is injected after load and
-   there are two composer definitions in the page — binding by id at load time misses
-   whichever one is actually on screen. */
+/* RTS input. The roman buffer is built from KEYSTROKES and is the only source of
+   truth; the field merely displays rts(buffer). Re-reading the field cannot work,
+   because Telugu cannot be converted back to roman — doing so lost the virama and
+   turned "amma" into అమమఅ. Everything is delegated, since the composer is injected
+   after load and the page carries two composer definitions. */
 (function () {
   let on = localStorage.getItem('bala_rts') !== '0';
   let buf = '';
-  const rtsBtn = () => document.getElementById('rtsbtn');
   function paint() {
-    const b = rtsBtn(); if (!b) return;
+    const b = document.getElementById('rtsbtn'); if (!b) return;
     b.style.background = on ? 'var(--accent)' : 'var(--surface)';
     b.style.color = on ? '#fff' : 'inherit';
     b.style.borderColor = on ? 'var(--accent)' : 'var(--line)';
   }
+  function draw(q) { if (q) q.value = on ? rts(buf) : buf; }
+
+  document.addEventListener('keydown', e => {
+    if (!on || !e.target || e.target.id !== 'q' || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === 'Backspace') { buf = buf.slice(0, -1); e.preventDefault(); draw(e.target); return; }
+    if (e.key === 'Enter') return;                       // let the send handler have it
+    if (e.key.length === 1) { buf += e.key; e.preventDefault(); draw(e.target); }
+  });
+  // paste, or anything that bypasses keydown: adopt the field only if it is plain ascii
   document.addEventListener('input', e => {
     if (!on || !e.target || e.target.id !== 'q') return;
-    buf = e.target.value;
-    e.target.value = rts(buf);
-  });
-  document.addEventListener('keydown', e => {
-    if (!on || !e.target || e.target.id !== 'q') return;
-    if (e.key === 'Backspace' && e.target.selectionStart === e.target.value.length) buf = buf.slice(0, -1);
+    if (/^[\x20-\x7E]*$/.test(e.target.value)) { buf = e.target.value; draw(e.target); }
+    else { draw(e.target); }
   });
   document.addEventListener('click', e => {
     const b = e.target && e.target.closest && e.target.closest('#rtsbtn');
@@ -2359,8 +2365,7 @@ function pageDashboard(){
     on = !on;
     localStorage.setItem('bala_rts', on ? '1' : '0');
     const q = document.getElementById('q');
-    if (q) { if (!on) { q.value = buf; } else { buf = q.value; q.value = rts(buf); } }
-    paint(); if (q) q.focus();
+    draw(q); paint(); if (q) q.focus();
   });
   new MutationObserver(paint).observe(document.body, { childList: true, subtree: true });
   paint();
