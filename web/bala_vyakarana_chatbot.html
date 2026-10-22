@@ -572,7 +572,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v76</span>
+  <span id="buildtag">build v77</span>
 </footer>
 
 <script>
@@ -2275,10 +2275,10 @@ function pageDashboard(){
 
 
 (function () {
-  const S = window.Sanscript;
-  const SCHEME = 'tr1';
+  const S = window.Converter;
+  const MODE = 'tr1';
   // expose the working scheme under a neutral name
-  try { if (S && S.schemes && S.schemes['itrans_dravidian'] && !S.schemes.tr1) S.schemes.tr1 = S.schemes['itrans_dravidian']; } catch (e) {}
+  try { if (S && S.schemes && S.schemes['the working scheme'] && !S.schemes.tr1) S.schemes.tr1 = S.schemes['the working scheme']; } catch (e) {}
   let on = localStorage.getItem('bala_rts_on') !== '0';
   let roman = '', rendered = '', busy = false;
 
@@ -2292,7 +2292,7 @@ function pageDashboard(){
       // fixed swaps use split/join: an escape inside a regex literal does not
       // survive the build intact, which silently disabled these rules.
       const VI = String.fromCharCode(0x0C4D);
-      let t = S.t(roman, SCHEME, 'telugu').split(String.fromCharCode(0x200C)).join('')
+      let t = S.t(roman, MODE, 'telugu').split(String.fromCharCode(0x200C)).join('')
                                             .split(String.fromCharCode(0x200D)).join('');
       t = t.split('@' + String.fromCharCode(0x0C39) + VI).join(String.fromCharCode(0x0C03));
       t = t.split('@' + String.fromCharCode(0x0C2E) + VI).join(String.fromCharCode(0x0C01));
