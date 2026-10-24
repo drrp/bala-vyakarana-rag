@@ -598,7 +598,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v81</span>
+  <span id="buildtag">build v82</span>
 </footer>
 
 <script>
@@ -1103,6 +1103,7 @@ function normTe(s){ return String(s==null?'':s).replace(/[ఁం\u200c\u200d]/g,
 function sbBook(){
   openPage(GT_BOOK.t,'<div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> తెస్తోంది…</div>');
   sbLoad().then(function(){
+    var opts='<option value="">అన్ని పరిచ్ఛేదములు</option>'+SB.p.map(function(c){ return '<option value="'+esc(c.id)+'">'+esc(c.title_te||c.id)+'</option>'; }).join('');
     var html='<div class="sb-search">'
       + '<div class="sb-srow"><input id="sb-q" type="search" placeholder="పుస్తకంలో పదము, సూత్రము లేదా వాక్యము వెతకండి…" autocomplete="off"><button id="sb-go">వెతకండి</button></div>'
       + '<div class="sb-srow"><select id="sb-f">'+opts+'</select><span class="sb-hint" id="sb-hint"></span></div>'
