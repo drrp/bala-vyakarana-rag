@@ -298,6 +298,10 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .thm .sw{width:20px;height:20px;border-radius:6px;border:1px solid var(--line-strong);flex:none}
 .thm .tick{margin-left:auto;color:var(--accent);font-size:12px}
 .fsbtn{font-family:var(--font-tel-display);font-size:13px;line-height:1;padding:7px 9px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+.navhelp{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-tel);font-size:12.5px;line-height:1;padding:7px 11px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);color:var(--accent);cursor:pointer;text-decoration:none;font-weight:600}
+.navhelp:hover{border-color:var(--accent)}
+.navhelp .nh-ic{font-size:13.5px;line-height:1}
+@media (max-width:520px){ .navhelp .nh-tx{display:none} .navhelp{padding:7px 9px} }
 .fsbtn:hover{border-color:var(--accent)}
 .fsbtn:disabled{opacity:.4;cursor:default}
 .quota{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.03em;color:var(--ink-dim);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;white-space:nowrap}
@@ -596,8 +600,8 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <button class="tool" data-page="quiz">పరీక్షణ</button>
   <button class="tool" data-page="dashboard">డాష్‌బోర్డ్</button>
   <span class="navtools">
-    <button class="fsbtn" id="fs-dec" type="button" title="అక్షరము చిన్నదిగా" aria-label="Smaller text">అ−</button>
-    <button class="fsbtn" id="fs-inc" type="button" title="అక్షరము పెద్దదిగా" aria-label="Larger text">అ+</button>
+    <a class="navhelp" id="navhelp" href="rts_guide.html" target="_blank" rel="noopener"
+       title="తెలుగు టైపింగ్ సహాయం" aria-label="Typing help"><span class="nh-ic" aria-hidden="true">⌨</span><span class="nh-tx">సహాయం</span></a>
     <button class="fsbtn" id="themebtn" type="button" title="రంగు ఎంచుకోండి" aria-label="Theme">🎨</button>
     <button class="fsbtn" id="refreshbtn" type="button" title="నవీన సంస్కరణను తెచ్చుకొను" aria-label="Refresh app">↻</button>
   </span>
@@ -610,7 +614,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v87</span>
+  <span id="buildtag">build v88</span>
 </footer>
 
 <script>
@@ -841,7 +845,7 @@ var WELCOME_HTML = '<div class="empty" id="welcome">'+
         '</div>'+
         '<h2>నమస్కారం! తెలుగు సంప్రదాయ వ్యాకరణాధ్యయనాన్ని ప్రారంభించండి.</h2>'+
         '<p>సంధి, సమాసము, కారకములు, సూత్రములు, ఉదాహరణలు, సంజ్ఞలు, పరిభాష... ఏదైనా అడగండి.</p>'+
-      '<p style="margin-top:14px"><a href="rts_guide.html" target="_blank" rel="noopener" style="display:inline-block;padding:9px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);text-decoration:none;color:var(--accent);font-weight:600;font-size:14px">⌨ తెలుగు టైపింగ్ మార్గదర్శిని</a></p></div>';
+      '</div>';
 var WELCOME_HOME = WELCOME_HTML.replace(' id="welcome"','');
 var COMPOSER_HTML = '<div class="composer"><div class="in">'+
       '<label id="rtswrap" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="display:flex;align-items:center;gap:5px;flex:none;cursor:pointer;font-size:12.5px;color:var(--ink-dim);user-select:none"><input type="checkbox" id="rtsbox" checked style="cursor:pointer;accent-color:var(--accent)"><span>A-అ</span></label><textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'+
