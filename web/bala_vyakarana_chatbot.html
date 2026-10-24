@@ -610,7 +610,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v86</span>
+  <span id="buildtag">build v87</span>
 </footer>
 
 <script>
@@ -1308,6 +1308,9 @@ function sbChapter(id, page){
       + '<span class="gt-count">పుట '+page+' / '+total+'</span>'
       + '<button class="pback" data-go="'+(page+1)+'"'+(page<total?'':' disabled')+' aria-label="తర్వాతి పుట">›</button>'
       + '</span>'
+      + '<span class="gt-tools" style="margin-left:10px">'
+      + '<button class="fsbtn" id="gt-dec" type="button" title="అక్షరము చిన్నదిగా">అ−</button>'
+      + '<button class="fsbtn" id="gt-inc" type="button" title="అక్షరము పెద్దదిగా">అ+</button></span>'
       + '<button class="pback gt-play" id="sb-playall" title="ఈ పుటలోని సూత్రములు వరుసగా వినండి">▶ ఈ పుట వినండి</button>'
       + '</div>'
       + '<div class="gt-head">'+title+'</div>'
@@ -2147,15 +2150,15 @@ function initFs(){
 function bindFs(){
   if(bindFs._done) return; bindFs._done = true;
   document.addEventListener('click', function(e){
-    var t = e.target && e.target.closest && e.target.closest('#fs-dec,#fs-inc,#rz-dec,#rz-inc');
+    var t = e.target && e.target.closest && e.target.closest('#fs-dec,#fs-inc,#rz-dec,#rz-inc,#gt-dec,#gt-inc');
     if(!t) return;
-    var up = (t.id === 'fs-inc' || t.id === 'rz-inc');
+    var up = /-inc$/.test(t.id);
     applyFs(currentFs() + (up ? FS_STEP : -FS_STEP), true);
   });
   new MutationObserver(function(){
     var f = currentFs();
-    ['fs-dec','rz-dec'].forEach(function(id){ var b=$(id); if(b) b.disabled = f <= FS_MIN + 0.001; });
-    ['fs-inc','rz-inc'].forEach(function(id){ var b=$(id); if(b) b.disabled = f >= FS_MAX - 0.001; });
+    ['fs-dec','rz-dec','gt-dec'].forEach(function(id){ var b=$(id); if(b) b.disabled = f <= FS_MIN + 0.001; });
+    ['fs-inc','rz-inc','gt-inc'].forEach(function(id){ var b=$(id); if(b) b.disabled = f >= FS_MAX - 0.001; });
   }).observe(document.body, { childList: true, subtree: true });
 }
 function setHdrVar(){
