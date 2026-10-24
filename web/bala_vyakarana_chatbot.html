@@ -610,7 +610,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v84</span>
+  <span id="buildtag">build v85</span>
 </footer>
 
 <script>
@@ -1117,6 +1117,7 @@ function sbBook(){
   sbLoad().then(function(){
     var opts='<option value="">అన్ని పరిచ్ఛేదములు</option>'+SB.p.map(function(c){ return '<option value="'+esc(c.id)+'">'+esc(c.title_te||c.id)+'</option>'; }).join('');
     var html='<div class="sb-search">'
+      '<label id="rtswrap" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:12.5px;color:var(--ink-dim);user-select:none;margin-bottom:7px"><input type="checkbox" id="rtsbox" checked style="cursor:pointer;accent-color:var(--accent)"><span>A-అ</span></label>'+
       + '<div class="sb-srow"><input id="sb-q" type="search" placeholder=""పుస్తకంలో పదము, సూత్రము లేదా వాక్యము వెతకండి…" autocomplete="off"><button id="sb-go">వెతకండి</button></div>'
       + '<div class="sb-srow"><select id="sb-f">'+opts+'</select><span class="sb-hint" id="sb-hint"></span></div>'
       + '</div>'
@@ -2426,11 +2427,16 @@ function pageDashboard(){
 (function () {
   const S = window.Converter;
   let on = localStorage.getItem('bala_rts_on') !== '0';
-  let roman = '', rendered = '', busy = false;
+  // one roman buffer per input: the chat composer and the reader's search boxes are
+  // separate fields, and sharing a buffer would cross-contaminate them
+  var TARGETS = ['q', 'sb-q'];
+  var BUF = {}, RENDERED = {}, busy = false;
+  function isTarget(id) { return TARGETS.indexOf(id) >= 0; }
+  function bufOf(id) { if (BUF[id] === undefined) BUF[id] = ''; return BUF[id]; }
 
-  function conv() {
-    if (!on) return roman;
-    try { return lekhini(roman); } catch (e) { return roman; }
+  function conv(id) {
+    if (!on) return bufOf(id);
+    try { return lekhini(bufOf(id)); } catch (e) { return bufOf(id); }
   }
   function paint() {
     document.querySelectorAll('#rtsbox').forEach(el => { el.checked = on; });
@@ -2442,14 +2448,15 @@ function pageDashboard(){
   function redraw(q) {
     if (!q) return;
     busy = true;
-    rendered = conv();
+    var id = q.id, rendered = conv(id);
+    RENDERED[id] = rendered;
     q.value = rendered;
     try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) {}
     busy = false;
   }
   document.addEventListener('input', e => {
-    if (busy || !e.target || e.target.id !== 'q' || !on) return;
-    const now = e.target.value;
+    if (busy || !e.target || !isTarget(e.target.id) || !on) return;
+    var id = e.target.id, now = e.target.value, rendered = RENDERED[id] || '', roman = bufOf(id);
     if (now === rendered) return;
     if (rendered.length > now.length && rendered.indexOf(now) === 0) {
       roman = roman.slice(0, roman.length - (rendered.length - now.length));
@@ -2458,16 +2465,21 @@ function pageDashboard(){
     } else {
       roman = now;
     }
+    BUF[id] = roman;
     redraw(e.target);
   });
   document.addEventListener('change', e => {
     if (!e.target || e.target.id !== 'rtsbox') return;
     on = e.target.checked;
     localStorage.setItem('bala_rts_on', on ? '1' : '0');
-    const q = document.getElementById('q');
-    if (q && !on) { q.value = roman; } else { redraw(q); }
+    TARGETS.forEach(function(id){
+      var q = document.getElementById(id);
+      if (!q) return;
+      if (!on) { q.value = bufOf(id); } else { redraw(q); }
+    });
     paint();
-    if (q) q.focus();
+    var act = document.activeElement;
+    if (act && isTarget(act.id)) act.focus();
   });
   new MutationObserver(paint).observe(document.body, { childList: true, subtree: true });
   paint();
