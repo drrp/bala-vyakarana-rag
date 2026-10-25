@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software or the corrected corpus, please cite it as below."
+title: "Telugu Traditional Grammar — Retrieval-Augmented Study Tool"
+abstract: >-
+  A retrieval-augmented study tool over the Telugu traditional grammar corpus
+  (బాలవ్యాకరణము and ప్రౌఢవ్యాకరణము with their ఘంటాపథము commentaries, the
+  వ్యాకరణ పదకోశము, and స్ఫూర్తిశ్రీ). Answers are drawn from the commentaries
+  themselves, with each sutra quoted in full and cited to its printed source.
+type: software
+authors:
+  - family-names: "Rambhatla"
+    given-names: "Parvatheeswara Sarma"
+    email: "rpsarma9247@gmail.com"
+version: 1.0.0
+date-released: "2025-10-25"
+license: Apache-2.0
+repository-code: "https://github.com/drrp/bala-vyakarana-rag"
+url: "https://lms.auchithyam.com/"
+keywords:
+  - Telugu
+  - traditional grammar
+  - vyakarana
+  - retrieval-augmented generation
+  - digital humanities
+  - corpus linguistics
