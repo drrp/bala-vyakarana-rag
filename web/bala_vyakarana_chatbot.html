@@ -291,7 +291,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .who-pic{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--line-strong);background:var(--surface-2)}
 .who-name{font-family:var(--font-tel);font-size:13.5px;color:var(--ink);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .navtools{display:inline-flex;gap:6px;align-items:center;margin-left:auto}
-.themepop{position:fixed;z-index:60;background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-2);padding:8px;display:flex;flex-direction:column;gap:2px;min-width:200px}
+.themepop{position:fixed;z-index:95;background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-2);padding:8px;display:flex;flex-direction:column;gap:2px;min-width:200px;max-height:min(70vh,420px);overflow-y:auto;max-width:calc(100vw - 20px)}
 .thm{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:9px;cursor:pointer;font-family:var(--font-tel);font-size:13.5px;color:var(--ink)}
 .thm:hover{background:var(--surface-2)}
 .thm.on{background:var(--accent-soft)}
@@ -662,7 +662,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v98</span>
+  <span id="buildtag">build v99</span>
 </footer>
 
 <script>
@@ -905,6 +905,22 @@ function startChat(){
   HISTORY=[];
   $('settings').style.display='none';
   $('tools').style.display='flex';
+  /* An installed PWA or WebView can start with a desktop-width layout viewport
+     (innerWidth near 980 on a phone). Re-asserting the viewport meta forces a
+     re-layout at device width. */
+  (function(){
+    function fixViewport(){
+      var m=document.querySelector('meta[name="viewport"]');
+      if(!m){ m=document.createElement('meta'); m.name='viewport'; document.head.appendChild(m); }
+      m.setAttribute('content','width=device-width, initial-scale=1.0, viewport-fit=cover');
+      var wide = window.innerWidth > 700 && (navigator.maxTouchPoints||0) > 0
+                 && window.innerWidth / window.innerHeight > 0.9;
+      if(wide){ document.documentElement.style.width='100%'; document.body.style.width='100%'; }
+    }
+    fixViewport();
+    window.addEventListener('orientationchange', function(){ setTimeout(fixViewport, 120); });
+  })();
+
   /* ---- side panel open/close ---- */
   (function(){
     var panel=$('sidepanel'), back=$('sidebackdrop'), tog=$('navtoggle'), close=$('navclose');
@@ -2152,10 +2168,13 @@ function openThemePop(){
   if(!pop||!btn) return;
   buildThemePop();
   var r=btn.getBoundingClientRect();
-  pop.style.top=(r.bottom+6)+'px';
-  pop.style.right=Math.max(10, window.innerWidth-r.right)+'px';
-  pop.style.left='auto';
   pop.style.display='flex';
+  // measure after showing, then clamp inside the viewport on every side
+  var pw=pop.offsetWidth||200, ph=pop.offsetHeight||200;
+  var vw=window.innerWidth, vh=window.innerHeight;
+  var left=r.right-pw; if(left+pw>vw-10) left=vw-10-pw; if(left<10) left=10;
+  var top=r.bottom+6; if(top+ph>vh-10) top=Math.max(10, r.top-ph-6);
+  pop.style.left=left+'px'; pop.style.right='auto'; pop.style.top=top+'px';
 }
 (function(){
   var b=$('themebtn');
