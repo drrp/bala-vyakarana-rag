@@ -298,7 +298,40 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .thm .sw{width:20px;height:20px;border-radius:6px;border:1px solid var(--line-strong);flex:none}
 .thm .tick{margin-left:auto;color:var(--accent);font-size:12px}
 .fsbtn{font-family:var(--font-tel-display);font-size:13px;line-height:1;padding:7px 9px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+/* ---- right-hand side panel (mobile-first navigation) ---- */
+.navtoggle{display:flex;flex-direction:column;justify-content:center;gap:4px;width:40px;height:36px;
+  padding:0 10px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);cursor:pointer}
+.navtoggle span{display:block;height:2px;border-radius:2px;background:var(--ink);transition:.18s}
+.navtoggle.on span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.navtoggle.on span:nth-child(2){opacity:0}
+.navtoggle.on span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+.sidebackdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:70}
+.sidebackdrop.on{display:block}
+.sidepanel{position:fixed;top:0;right:0;height:100dvh;width:288px;max-width:86vw;z-index:71;
+  background:var(--surface);border-left:1px solid var(--line-strong);
+  box-shadow:-10px 0 30px rgba(0,0,0,.16);display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .22s ease;visibility:hidden}
+.sidepanel.on{transform:translateX(0);visibility:visible}
+.sp-head{display:flex;align-items:center;gap:9px;padding:16px 14px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sp-head .who{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+.sp-head .who-name{max-width:none;font-size:14px;font-weight:600}
+.sp-close{margin-left:auto;border:none;background:transparent;font-size:17px;line-height:1;
+  color:var(--ink-dim);cursor:pointer;padding:4px 6px;border-radius:8px}
+.sp-close:hover{background:var(--surface-2);color:var(--ink)}
+.sp-body{padding:10px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px}
+.sp-nav{display:flex!important;flex-direction:column;gap:4px;border:none;padding:0;margin:0;background:transparent}
+.sp-nav .tool{width:100%;text-align:left;justify-content:flex-start;padding:11px 13px;border-radius:10px;font-size:14.5px}
+.sp-nav .tool.on{background:var(--accent);color:#fff}
+.sp-nav .navtools{display:flex!important;flex-wrap:wrap;gap:7px;margin:10px 0 0;padding-top:11px;
+  border-top:1px solid var(--line);justify-content:flex-start}
+.sp-foot{padding:12px 14px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.sp-logout{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line-strong);
+  background:var(--surface-2);color:#c0392b;font-family:var(--font-tel);font-size:14px;font-weight:600;cursor:pointer}
+.sp-logout:hover{border-color:#c0392b}
 .chatbar{max-width:840px;margin:0 auto 10px;display:flex;justify-content:flex-end}
+.chatbar{gap:8px}
+.clearbadge.newchat{color:var(--accent);border-color:var(--accent)}
+.clearbadge.newchat:hover{background:var(--accent);color:#fff}
 .clearbadge{font-family:var(--font-tel);font-size:12.5px;line-height:1;padding:8px 13px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-dim);cursor:pointer}
 .clearbadge:hover{border-color:#c0392b;color:#c0392b}
 .clearbadge:disabled{opacity:.5;cursor:default}
@@ -587,16 +620,24 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
     </div>
   </div>
   <div class="right">
+    <button class="btn" id="settings" style="display:none">Connection</button>
+    <button class="navtoggle" id="navtoggle" type="button" aria-label="మెనూ" title="మెనూ">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+<div class="sidebackdrop" id="sidebackdrop"></div>
+<aside class="sidepanel" id="sidepanel" aria-hidden="true">
+  <div class="sp-head">
     <div class="who" id="who" style="display:none">
       <img id="who-pic" class="who-pic" alt="">
       <span id="who-name" class="who-name"></span>
-      <span id="quota" class="quota" title="వాడిన ప్రశ్నలు / మొత్తం పరిమితి"></span>
     </div>
-    <button class="btn" id="logout" style="display:none" title="నిష్క్రమించు">నిష్క్రమించు</button>
-    <button class="btn" id="settings" style="display:none">Connection</button>
+    <span id="quota" class="quota" title="వాడిన ప్రశ్నలు / మొత్తం పరిమితి"></span>
+    <button class="sp-close" id="navclose" type="button" aria-label="మూయు">✕</button>
   </div>
-</header>
-<nav class="tools" id="tools" style="display:none">
+  <div class="sp-body">
+<nav class="tools sp-nav" id="tools" style="display:none">
   <button class="tool" data-page="chat">స్వాగతం</button>
   <button class="tool" data-page="chatbot">సంభాషణ</button>
   <button class="tool" data-page="text">గ్రంథము</button>
@@ -609,6 +650,11 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
     <button class="fsbtn" id="refreshbtn" type="button" title="నవీన సంస్కరణను తెచ్చుకొను" aria-label="Refresh app">↻</button>
   </span>
 </nav>
+  </div>
+  <div class="sp-foot">
+    <button class="sp-logout" id="logout" style="display:none" title="నిష్క్రమించు">నిష్క్రమించు</button>
+  </div>
+</aside>
 <div id="themepop" class="themepop" style="display:none"></div>
 <div id="app" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
 <div id="page" class="page" style="display:none"><div class="page-hd"><button class="pback" id="page-close">← స్వాగతం</button><h2 id="page-title"></h2></div><div class="page-body" id="page-body"></div></div>
@@ -617,7 +663,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v91</span>
+  <span id="buildtag">build v93</span>
 </footer>
 
 <script>
@@ -860,7 +906,20 @@ function startChat(){
   HISTORY=[];
   $('settings').style.display='none';
   $('tools').style.display='flex';
-  document.querySelectorAll('#tools .tool').forEach(function(b){ b.onclick=function(){document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); });b.classList.add('on'); pageFor(b.getAttribute('data-page')); }; });
+  /* ---- side panel open/close ---- */
+  (function(){
+    var panel=$('sidepanel'), back=$('sidebackdrop'), tog=$('navtoggle'), close=$('navclose');
+    function open(){ if(!panel) return; panel.classList.add('on'); panel.setAttribute('aria-hidden','false');
+      if(back) back.classList.add('on'); if(tog) tog.classList.add('on'); }
+    function shut(){ if(!panel) return; panel.classList.remove('on'); panel.setAttribute('aria-hidden','true');
+      if(back) back.classList.remove('on'); if(tog) tog.classList.remove('on'); }
+    window.__sideOpen=open; window.__sideShut=shut;
+    if(tog) tog.onclick=function(){ panel.classList.contains('on') ? shut() : open(); };
+    if(close) close.onclick=shut;
+    if(back) back.onclick=shut;
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') shut(); });
+  })();
+  document.querySelectorAll('#tools .tool').forEach(function(b){ b.onclick=function(){document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); });b.classList.add('on'); pageFor(b.getAttribute('data-page')); if(window.__sideShut) window.__sideShut(); }; });
   $('page-close').onclick=goHome;
   app.innerHTML = '<div class="chat"><div class="thread">'+WELCOME_HOME+'</div></div>'+
     '<div class="landing-cta"><button class="btn primary" id="open-chatbot" type="button">కొత్త సంభాషణ ప్రారంభించండి →</button></div>';
@@ -879,7 +938,7 @@ document.addEventListener('keydown', function(e){
 function pageChatbot(){
   if(!AUTH.allowed['chatbot']){ openPage('కొత్త సంభాషణ','<p class="sh-sub">ఈ పేజీకి అనుమతి లేదు.</p>'); return; }
   openPage('కొత్త సంభాషణ',
-    '<div class="chatbar"><button class="clearbadge" id="clear" type="button" title="ఈ సంభాషణను తొలగించు">🗑 సంభాషణ చెరిపివేయి</button></div>'
+    '<div class="chatbar"><button class="clearbadge newchat" id="chatnew" type="button" title="కొత్త సంభాషణ ప్రారంభించు">కొత్త సంభాషణ</button><button class="clearbadge" id="clear" type="button" title="ఈ సంభాషణను తొలగించు">🗑 సంభాషణ చెరిపివేయి</button></div>'
     + '<div class="chat"><div class="thread" id="thread"><div class="chat-hello" id="welcome">మీ ప్రశ్న అడగండి.</div></div></div>'
     + '<div class="composer"><div class="in">'
     +   '<label id="rtswrap" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="display:flex;align-items:center;gap:5px;flex:none;cursor:pointer;font-size:12.5px;color:var(--ink-dim);user-select:none"><input type="checkbox" id="rtsbox" checked style="cursor:pointer;accent-color:var(--accent)"><span>A-అ</span></label><textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'
@@ -889,6 +948,8 @@ function pageChatbot(){
     function(){
       var q=$('q');
       if(q) q.addEventListener('input',function(){ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,140)+'px'; });
+      var cn=$('chatnew');
+      if(cn) cn.onclick=function(){ HISTORY=[]; pageChatbot(); };
       var cl=$('clear');
       if(cl){
         cl.style.display='inline-block';
