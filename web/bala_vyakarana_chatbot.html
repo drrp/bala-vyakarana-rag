@@ -328,10 +328,8 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
 .sp-logout{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line-strong);
   background:var(--surface-2);color:#c0392b;font-family:var(--font-tel);font-size:14px;font-weight:600;cursor:pointer}
 .sp-logout:hover{border-color:#c0392b}
-.page-body>.chatbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;max-width:720px;width:auto;margin-left:0;margin-right:auto;margin-bottom:12px}
+.page-body>.chatbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;max-width:100%;min-width:0;width:100%;margin:0 0 12px}
 .chatbar{gap:8px}
-.clearbadge.newchat{color:var(--accent);border-color:var(--accent)}
-.clearbadge.newchat:hover{background:var(--accent);color:#fff}
 .clearbadge{font-family:var(--font-tel);font-size:12.5px;line-height:1;padding:8px 13px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-dim);cursor:pointer}
 .clearbadge:hover{border-color:#c0392b;color:#c0392b}
 .clearbadge:disabled{opacity:.5;cursor:default}
@@ -663,7 +661,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v95</span>
+  <span id="buildtag">build v96</span>
 </footer>
 
 <script>
@@ -938,7 +936,7 @@ document.addEventListener('keydown', function(e){
 function pageChatbot(){
   if(!AUTH.allowed['chatbot']){ openPage('కొత్త సంభాషణ','<p class="sh-sub">ఈ పేజీకి అనుమతి లేదు.</p>'); return; }
   openPage('కొత్త సంభాషణ',
-    '<div class="chatbar"><button class="clearbadge newchat" id="chatnew" type="button" title="కొత్త సంభాషణ ప్రారంభించు">కొత్త సంభాషణ</button><button class="clearbadge" id="clear" type="button" title="ఈ సంభాషణను తొలగించు">🗑 సంభాషణ చెరిపివేయి</button></div>'
+    '<div class="chatbar"><button class="clearbadge" id="clear" type="button" title="ఈ సంభాషణను తొలగించు">🗑 సంభాషణ చెరిపివేయి</button></div>'
     + '<div class="chat"><div class="thread" id="thread"><div class="chat-hello" id="welcome">మీ ప్రశ్న అడగండి.</div></div></div>'
     + '<div class="composer"><div class="in">'
     +   '<label id="rtswrap" title="ఆంగ్ల అక్షరములలో టైపు చేయండి — తెలుగులో మారును" style="display:flex;align-items:center;gap:5px;flex:none;cursor:pointer;font-size:12.5px;color:var(--ink-dim);user-select:none"><input type="checkbox" id="rtsbox" checked style="cursor:pointer;accent-color:var(--accent)"><span>A-అ</span></label><textarea id="q" rows="1" placeholder="అడగండి…"></textarea>'
@@ -948,8 +946,6 @@ function pageChatbot(){
     function(){
       var q=$('q');
       if(q) q.addEventListener('input',function(){ q.style.height='auto'; q.style.height=Math.min(q.scrollHeight,140)+'px'; });
-      var cn=$('chatnew');
-      if(cn) cn.onclick=function(){ HISTORY=[]; pageChatbot(); };
       var cl=$('clear');
       if(cl){
         cl.style.display='inline-block';
