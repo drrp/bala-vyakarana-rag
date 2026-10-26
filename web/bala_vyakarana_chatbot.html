@@ -662,7 +662,7 @@ label{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.
   <span class="sep">·</span>
   <span>© 2026</span>
   <span class="sep">·</span>
-  <span id="buildtag">build v97</span>
+  <span id="buildtag">build v98</span>
 </footer>
 
 <script>
@@ -1057,6 +1057,9 @@ async function send(override){
 }
 
 function openPage(title, inner, ready){
+  // the header is shared, so drop the chat-only clear badge before drawing a page
+  var hd0=document.querySelector('.page-hd');
+  if(hd0){ var oldc=hd0.querySelector('#clear'); if(oldc && oldc.parentNode) oldc.parentNode.removeChild(oldc); }
   $('page-body').classList.remove('chatpage');
   $('page-title').textContent=title;
   $('page-body').innerHTML=inner;
@@ -1065,6 +1068,8 @@ function openPage(title, inner, ready){
   if(ready) ready();
 }
 function closePage(){
+  var hd1=document.querySelector('.page-hd');
+  if(hd1){ var oldc1=hd1.querySelector('#clear'); if(oldc1 && oldc1.parentNode) oldc1.parentNode.removeChild(oldc1); }
   $('page').style.display='none';
   var t=document.querySelector('#tools .tool[data-page="chat"]');
   if(t){ document.querySelectorAll('#tools .tool').forEach(function(x){ x.classList.remove('on'); }); t.classList.add('on'); }
